@@ -6,7 +6,7 @@ v2
 * Vacuum Hashtable
 * Vacuum Filter
 
-v1
+v1 - original repository [here](https://github.com/mwong775/cuckoo-project/).
 * Cuckoo Hashtable
 * Cuckoo Filter
 
