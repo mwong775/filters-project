@@ -1,0 +1,70 @@
+revoked, unrevoked
+262328, 28341276
+insert size, lookup size, init size, max percent load factor
+262328, 28341276, 276134, 95.0
+
+lookup round, false positives, percent fp's
+1, 27867, 0.098327
+2, 6986, 0.024650
+3, 1975, 0.006969
+4, 610, 0.002152
+5, 200, 0.000706
+6, 67, 0.000236
+7, 28, 0.000099
+8, 6, 0.000021
+9, 4, 0.000014
+10, 0, 0.000000
+
+slot per bucket, bucket count, capacity, load factor
+4, 131072, 524288, 50.04
+
+rehashes per bucket, count
+0, 41405
+1, 18169
+2, 4302
+3, 1155
+4, 345
+5, 106
+6, 36
+7, 12
+8, 3
+9, 3
+
+total rehashes, max rehash, average per bucket, percent rehashed buckets
+32499, 9, 0.2479, 18.410
+
+revoked, unrevoked
+262328, 28341276
+insert size, lookup size, init size, max percent load factor
+262328, 28341276, 276134, 95.0
+
+lookup round, false positives, percent fp's
+1, 27867, 0.098327
+2, 6986, 0.024650
+3, 1975, 0.006969
+4, 610, 0.002152
+5, 200, 0.000706
+6, 67, 0.000236
+7, 28, 0.000099
+8, 6, 0.000021
+9, 4, 0.000014
+10, 0, 0.000000
+
+slot per bucket, bucket count, capacity, load factor
+4, 131072, 524288, 50.04
+
+rehashes per bucket, count
+0, 41405
+1, 18169
+2, 4302
+3, 1155
+4, 345
+5, 106
+6, 36
+7, 12
+8, 3
+9, 3
+
+total rehashes, max rehash, average per bucket, percent rehashed buckets
+32499, 9, 0.2479, 18.410
+
