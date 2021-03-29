@@ -17,26 +17,6 @@
 const int AR = 4;
 const int BATCH_SIZE = 128;
 
-inline int find_the_highest_bit(int v)
-{
-// tricks of bit 
-// from http://graphics.stanford.edu/~seander/bithacks.html
-    static const int MultiplyDeBruijnBitPosition[32] = 
-    {
-      0, 9, 1, 10, 13, 21, 2, 29, 11, 14, 16, 18, 22, 25, 3, 30,
-      8, 12, 20, 28, 15, 17, 24, 7, 19, 27, 23, 6, 26, 5, 4, 31
-    };
-
-    v |= v >> 1; // first round down to one less than a power of 2 
-    v |= v >> 2;
-    v |= v >> 4;
-    v |= v >> 8;
-    v |= v >> 16;
-
-    int r = MultiplyDeBruijnBitPosition[(uint32_t)(v * 0x07C4ACDDU) >> 27];
-    return r;
-}
-
 namespace cuckoofilter {
 // status returned by a cuckoo filter operation
 
@@ -88,7 +68,7 @@ int proper_alt_range(int M, int i, int *len)
       for (int j = 0; j < i; j++)
           f += 0.25 * (alt_range * 1.0 / len[j]);
       */
-      if (balls_in_bins_max_load(f * b * lf * M, M * 1.0 / alt_range) < 0.97 * b * alt_range)
+      if (balls_in_bins_max_load(f * b * lf * M, M * 1.0 / alt_range) < 0.97 * b * alt_range) // Alg. 1: if D < P 
         return alt_range;
       alt_range <<= 1;
     }
@@ -195,7 +175,7 @@ class VacuumFilter {
             for (int i = 0; i < AR; i++)
               len[i] = num_buckets - 1;
     } else
-    {
+    { // this is default
         /*
             big_seg = upperpower2(int(max_num_keys / assoc / 0.95) / 100);
             if (big_seg < 128) big_seg = 128;
@@ -203,13 +183,13 @@ class VacuumFilter {
         */
             //big_seg = upperpower2(int(max_num_keys / assoc) / 100);
             big_seg = 0;
-            big_seg = max(big_seg, proper_alt_range(max_num_keys / assoc, 0, len));
-            big_seg = max(big_seg, 1024);
+            big_seg = std::max(big_seg, proper_alt_range(max_num_keys / assoc, 0, len));
+            big_seg = std::max(big_seg, 1024);
             num_buckets = ROUNDUP(int(max_num_keys / assoc), big_seg);
 
             big_seg--;
             len[0] = big_seg;
-            for (int i = 1; i < AR; i++)
+            for (int i = 1; i < AR; i++) // sets all alt ranges
               len[i] = proper_alt_range(num_buckets, i, len) - 1;
             len[AR - 1] = (len[AR - 1] + 1)  * 2 - 1;
             if (AR == 1) num_buckets = ROUNDUP(int(max_num_keys / assoc), len[0] + 1);
@@ -394,6 +374,7 @@ Status VacuumFilter<ItemType, bits_per_item, TableType, HashFamily>::AddImpl(
   uint32_t tags[4];
   uint32_t tmp_tags[4];
 
+  // this insert seems redundant, handled in first iter. of loop below?
   if (table_ -> InsertTagToBucket(curindex, curtag, false, oldtag, tags))
   {
       num_items_++;
@@ -587,7 +568,7 @@ template <typename ItemType, size_t bits_per_item,
           template <size_t> class TableType, typename HashFamily>
 std::string VacuumFilter<ItemType, bits_per_item, TableType, HashFamily>::Info() const {
   std::stringstream ss;
-  ss << "CuckooFilter Status:\n"
+  ss << "VacuumFilter Status:\n"
      << "\t\t" << table_->Info() << "\n"
      << "\t\tKeys stored: " << Size() << "\n"
      << "\t\tLoad factor: " << LoadFactor() << "\n"

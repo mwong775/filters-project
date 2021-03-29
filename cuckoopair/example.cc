@@ -135,7 +135,7 @@ vector<uint8_t> hashtable_ops(const uint64_t &init_size, vector<KeyType> &r, vec
 }
 
 template <typename KeyType>
-void create_filter(const uint64_t &init_size, vector<vector<KeyType>> &fp_table, vector<uint16_t> &seeds, vector<KeyType> &r, vector<KeyType> &s, FILE *file)
+void create_filter(const uint64_t &init_size, vector<vector<KeyType>> &fp_table, vector<uint8_t> &seeds, vector<KeyType> &r, vector<KeyType> &s, FILE *file)
 {
     cuckoofilter::CuckooFilter<KeyType, 12, CityHasher<KeyType>> filter(init_size, seeds);
 
