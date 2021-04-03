@@ -10,7 +10,7 @@
 #include <type_traits>
 #include <utility>
 
-namespace cuckoohashtable
+namespace vacuumhashtable
 {
     /**
      * manages storage of keys for the table
@@ -117,7 +117,7 @@ namespace cuckoohashtable
             hashpower_.store(val, std::memory_order_release);
         }
 
-        size_type size() const { return size_type(1) << hashpower(); }
+        size_type size() const { return hashpower(); }
 
         allocator_type get_allocator() const { return allocator_; }
 

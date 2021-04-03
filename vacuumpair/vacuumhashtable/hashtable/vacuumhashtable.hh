@@ -24,13 +24,16 @@
 #include <bits/stdc++.h>
 
 #include "bucketcontainer.hh"
+#include "../../vacuumfilter/hashutil.h"
 
-// #include "../city_hasher.hh"
+// copied from vacuumfilter
+#define ROUNDDOWN(a, b) ((a) - ((a) % (b)))
+#define ROUNDUP(a, b) ROUNDDOWN((a) + (b - 1), b)
 
-namespace VACUUMhashtable
+namespace vacuumhashtable
 {
 
-    template <class Key, std::size_t bits_per_key, class Hash = std::hash<Key>, class KeyEqual = std::equal_to<Key>,
+    template <class Key, std::size_t bits_per_key, typename Hash = cuckoofilter::TwoIndependentMultiplyShift, class KeyEqual = std::equal_to<Key>,
               class Allocator = std::allocator<Key>, std::size_t SLOT_PER_BUCKET = 4>
     class vacuum_hashtable
     {
@@ -64,9 +67,9 @@ namespace VACUUMhashtable
      * @param equal - equality function instance to use
      * @param alloc ? 
      */
-        vacuum_hashtable(size_type n = (1U << 16) * 4, const Hash &hf = Hash(),
+        vacuum_hashtable(size_type n = (1U << 16) * 4, const Hash &hf = Hash(), bool aligned = false,
                          const KeyEqual &equal = KeyEqual(), const Allocator &alloc = Allocator()) : num_items_(0), hash_fn_(hf), eq_fn_(equal),
-                                                                                                     buckets_(reserve_calc(n), alloc), seeds_(bucket_count()), num_lookup_rds_(0) {}
+                                                                                                     buckets_(reserve_calc(n, aligned), alloc), seeds_(bucket_count()), num_lookup_rds_(0) {}
 
         /**
      * Copy constructor
@@ -456,7 +459,8 @@ namespace VACUUMhashtable
         static inline size_type index_hash(const size_type hp, const size_type key) // hv
         {
             const uint32_t hash = key >> 32;
-            return hash & hashmask(hp);
+            return hash & bucket_count();
+            // return hash & hashmask(hp);
             // return hv & hashmask(hp);
         }
 
@@ -468,7 +472,7 @@ namespace VACUUMhashtable
         static inline size_type alt_index(const size_type hp, const size_type key,
                                           const size_type index)
         {
-            // (libcuckoo) ensure fp is nonzero for the multiply. 0xc6a4a7935bd1e995 is the
+            // (libcuckoo) ensure fp i6s nonzero for the multiply. 0xc6a4a7935bd1e995 is the
             // hash constant from 64-bit MurmurHash2
             // const size_type nonzero_fp = static_cast<size_type>(partial) + 1;
             // (DRECHT) ensure fp is nonzero for the multiply
@@ -771,7 +775,7 @@ namespace VACUUMhashtable
         // a slot on either of the insert buckets. On success, the bucket and slot
         // that was freed up is stored in insert_bucket and insert_slot. If run_cuckoo
         // returns ok (success), then `b` will be active, otherwise it will not.
-        cuckoo_status run_cuckoo(TwoBuckets &b, size_type &insert_bucket, size_type &insert_slot)
+        vacuum_status run_cuckoo(TwoBuckets &b, size_type &insert_bucket, size_type &insert_slot)
         {
             // std::cout << "run_cuckoo\n";
             // cuckoo_search and cuckoo_move
@@ -1040,17 +1044,113 @@ namespace VACUUMhashtable
 
         // Miscellaneous functions
 
+        // functions for determining AR in vacuum
+        // solve equation : 1 + x(logc - logx + 1) - c = 0
+        double F_d(double x, double c)
+        {
+            return log(c) - log(x);
+        }
+        double F(double x, double c)
+        {
+            return 1 + x * (log(c) - log(x) + 1) - c;
+        }
+        double solve_equation(double c)
+        {
+            double x = c + 0.1;
+            while (abs(F(x, c)) > 0.01)
+                x -= F(x, c) / F_d(x, c);
+            return x;
+        }
+
+        double balls_in_bins_max_load(double balls, double bins)
+        {
+            double m = balls;
+            double n = bins;
+            double c = m / (n * log(n));
+
+            if (c < 5)
+            {
+                double dc = solve_equation(c);
+                double ret = (dc - 1 + 2) * log(n);
+                return ret;
+            }
+
+            double ret = (m / n) + 1.5 * sqrt(2 * m / n * log(n));
+            //printf("m = %.2f, n = %.2f, m/n = %.5f, ret = %.5f\n", m, n, m/n, ret);
+            return ret;
+        }
+
+        int proper_alt_range(int M, int i, int *len)
+        {
+            //printf("%d %.2f\n", M, frac);
+            double b = 4;     // slots per bucket
+            double lf = 0.95; // target load factor
+            int alt_range = 8;
+            for (; alt_range < M;)
+            {
+                double f = (AR - i) * (1.0 / AR);
+                /*
+      for (int j = 0; j < i; j++)
+          f += 0.25 * (alt_range * 1.0 / len[j]);
+      */
+                if (balls_in_bins_max_load(f * b * lf * M, M * 1.0 / alt_range) < 0.97 * b * alt_range) // Alg. 1: if D < P
+                    return alt_range;
+                alt_range <<= 1;
+            }
+            return -1;
+        }
+
         // reserve_calc takes in a parameter specifying a certain number of slots
         // for a table and returns the smallest hashpower that will hold n elements.
-        static size_type
-        reserve_calc(const size_type n)
+        size_type
+        reserve_calc(const size_type n, bool aligned = false)
         {
+            // Update for vacuum - follows filter code (n = max_num_keys, buckets = num_buckets)
+            size_type buckets;
+            if (aligned)
+            {
+                buckets = cuckoofilter::upperpower2(std::max<uint64_t>(1, n / SLOT_PER_BUCKET));
+                if (buckets < 128)
+                    buckets = 128;
+
+                double frac = (double)n / buckets / SLOT_PER_BUCKET;
+
+                for (int i = 0; i < AR; i++)
+                    len[i] = buckets - 1;
+            }
+            else
+            {
+                big_seg = 0;
+                big_seg = std::max(big_seg, proper_alt_range(n / SLOT_PER_BUCKET, 0, len));
+                big_seg = std::max(big_seg, 1024);
+                buckets = ROUNDUP(int(n / SLOT_PER_BUCKET), big_seg);
+
+                big_seg--;
+                len[0] = big_seg;
+                for (int i = 1; i < AR; i++) // sets all alt ranges
+                    len[i] = proper_alt_range(buckets, i, len) - 1;
+                len[AR - 1] = (len[AR - 1] + 1) * 2 - 1;
+                if (AR == 1)
+                    buckets = ROUNDUP(int(n / SLOT_PER_BUCKET), len[0] + 1);
+            }
+
+            std::cout << "buckets = " << buckets << std::endl;
+            //std::cout << "big_segment_length = " << big_seg << std::endl;
+            std::cout << "alt range setting : ";
+            for (int i = 0; i < AR; i++)
+                std::cout << len[i] + 1 << ", ";
+            std::cout << std::endl << "returning buckets: " << buckets << "\n";
+            
+            return buckets;
+
+            /*
             const size_type buckets = (n + slot_per_bucket() - 1) / slot_per_bucket();
             size_type blog2;
             for (blog2 = 0; (size_type(1) << blog2) < buckets; ++blog2)
                 ;
             assert(n <= buckets * slot_per_bucket() && buckets <= hashsize(blog2));
             return blog2;
+            */
         }
 
         // Member variables
@@ -1071,6 +1171,10 @@ namespace VACUUMhashtable
 
         mutable std::vector<uint8_t> seeds_;
         mutable size_t num_lookup_rds_;
+
+        // vacuum
+        int len[AR];
+        int big_seg;
     };
 
 }; // namespace cuckoohashtable
