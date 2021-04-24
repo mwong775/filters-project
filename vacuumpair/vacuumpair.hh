@@ -1,11 +1,11 @@
-#ifndef CUCKOO_PAIR_HH
-#define CUCKOO_PAIR_HH
+#ifndef VACUUM_PAIR_HH
+#define VACUUM_PAIR_HH
 
-#include "cuckoofilter/src/cuckoofilter.h"
-#include "cuckoohashtable/hashtable/cuckoohashtable.hh"
+#include "vacuumfilter/vacuumfilter.h"
+#include "vacuumhashtable/hashtable/vacuumhashtable.hh"
 #include <math.h>
 #include <bits/stdc++.h>
-#include "cuckoohashtable/city_hasher.hh"
+#include "vacuumhashtable/city_hasher.hh"
 
 using namespace std;
 
@@ -14,7 +14,7 @@ idea: class for performing zeroing false positive algorithm, and returning cucko
 */
 
 template <typename KeyType, size_t bits_per_fp = 12, class Hash = CityHasher<KeyType>>
-class cuckoopair
+class vacuumpair
 {
 private:
     size_t num_items_;
@@ -23,14 +23,14 @@ private:
     std::vector<uint8_t> seeds_;
 
 public:
-    cuckoohashtable::cuckoo_hashtable<KeyType, bits_per_fp, Hash> *table_; // , CityHasher<KeyType>
-    cuckoofilter::CuckooFilter<KeyType, bits_per_fp, Hash> *filter_;
+    vacuumhashtable::vacuum_hashtable<KeyType, bits_per_fp, Hash> *table_; // , CityHasher<KeyType>
+    cuckoofilter::VacuumFilter<KeyType, bits_per_fp, Hash> *filter_;
 
 public:
-    explicit cuckoopair(vector<KeyType> r, vector<KeyType> s) : num_items_(r.size())
+    explicit vacuumpair(vector<KeyType> r, vector<KeyType> s) : num_items_(r.size())
     {
         size_ = r.size() / 0.95;
-        table_ = new cuckoohashtable::cuckoo_hashtable<KeyType, bits_per_fp, Hash>(size_);
+        table_ = new vacuumhashtable::vacuum_hashtable<KeyType, bits_per_fp, Hash>(size_);
         insert_hashtable(r);
         fn_lookup_hashtable(r);
 
@@ -39,7 +39,7 @@ public:
         vector<vector<KeyType>> fp_table;
         table_->export_table(fp_table);
 
-        filter_ = new cuckoofilter::CuckooFilter<KeyType, bits_per_fp, Hash>(size_, table_->get_seeds());
+        filter_ = new cuckoofilter::VacuumFilter<KeyType, bits_per_fp, Hash>(size_, table_->get_seeds());
 
         insert_filter(fp_table);
 
@@ -138,7 +138,8 @@ public:
 
             for (int j = 0; j < b.size(); j++)
             {
-                assert(filter_->CopyInsert(b.at(j), i, j) == cuckoofilter::Ok);
+                filter_->CopyInsert(b.at(j), i, j);
+                // assert(filter_->CopyInsert(b.at(j), i, j) == cuckoofilter::Ok);
             }
         }
 
@@ -149,7 +150,7 @@ public:
     void check_lookup_filter(vector<K> &r, vector<K> &s)
     {
         // check no false negatives - failing here with sizes above 10k :(
-        cout << "\nChecking CF false negatives:\n";
+        cout << "\nChecking VF false negatives:\n";
         for (auto c : r)
             assert(filter_->Contain(c) == cuckoofilter::Ok);
 
@@ -166,7 +167,7 @@ public:
     }
     
     
-    cuckoofilter::CuckooFilter<KeyType, bits_per_fp, Hash> get_filter() {
+    cuckoofilter::VacuumFilter<KeyType, bits_per_fp, Hash> get_filter() {
         return *filter_;
     }
 
@@ -184,4 +185,4 @@ public:
     // filter_t filter_;
 };
 
-#endif // CUCKOO_PAIR_HH
+#endif // VACUUM_PAIR_HH

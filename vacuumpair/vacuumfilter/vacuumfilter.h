@@ -117,6 +117,8 @@ namespace cuckoofilter
 
     HashFamily hasher_;
 
+    std::vector<uint8_t> seeds_;
+
     int big_seg;
     int len[AR];
 
@@ -136,20 +138,32 @@ namespace cuckoofilter
     inline void GenerateIndexTagHash(const ItemType &item, size_t *index,
                                      uint32_t *tag) const
     {
-      const uint64_t hash = hasher_(item);
+      const uint64_t hash = hasher_(item, seeds_.at(*index));
       *index = IndexHash(hash >> 32);
       *tag = TagHash(hash);
     }
 
-    inline size_t AltIndex(int index, const uint32_t tag) const
+    // modified of above function to use for 2 indices and tags
+    inline void GenerateTagHashes(const ItemType &item, size_t *i1, size_t *i2,
+                                  uint32_t *tag1, uint32_t *tag2) const
+    {
+      const uint64_t hash1 = hasher_(item, seeds_.at(*i1));
+      const uint64_t hash2 = hasher_(item, seeds_.at(*i2));
+      *i1 = IndexHash(hash1 >> 32); // original: hash >> 32
+      *i2 = AltIndex(*i1, item);
+      *tag1 = TagHash(hash1);
+      *tag2 = TagHash(hash2);
+    }
+
+    inline size_t AltIndex(int index, const ItemType &item) const
     {
       // NOTE(binfan): originally we use:
       // index ^ HashUtil::BobHash((const void*) (&tag), 4)) & table_->INDEXMASK;
       // now doing a quick-n-dirty way:
       // 0x5bd1e995 is the hash constant from MurmurHash2
       //return IndexHash((uint32_t)(index ^ (tag * 0x5bd1e995)));
-      int t = tag * 0x5bd1e995;
-      int seg = len[tag & (AR - 1)];
+      int t = item * 0x5bd1e995;
+      int seg = len[item & (AR - 1)];
       t = t & seg;
       //t += (t == 0);
       return index ^ t;
@@ -158,7 +172,7 @@ namespace cuckoofilter
     Status AddImpl(const size_t i, const uint32_t tag);
 
   public:
-    explicit VacuumFilter(const size_t max_num_keys, bool aligned = false, bool _packed = false) : num_items_(0), victim_(), hasher_()
+    explicit VacuumFilter(const size_t max_num_keys, const std::vector<uint8_t> &seeds = std::vector<uint8_t>(), bool aligned = false, bool _packed = false) : num_items_(0), victim_(), hasher_()
     {
 
       std::cout << "good" << std::endl;
@@ -166,6 +180,9 @@ namespace cuckoofilter
       size_t assoc = 4;
       size_t num_buckets;
       packed = _packed;
+
+      if (seeds.size())
+        seeds_ = seeds;
 
       if (aligned)
       {
@@ -242,6 +259,9 @@ namespace cuckoofilter
 
     bool evict(const size_t i, const uint32_t tag);
 
+    // Insert item to the filter at given bucket index and slot.
+    void CopyInsert(const uint32_t fp, size_t index, size_t slot);
+
     // Report if the item is inserted, with false positive rate.
     Status Contain(const ItemType &item) const;
 
@@ -274,7 +294,7 @@ namespace cuckoofilter
   };
 
   template <typename ItemType, size_t bits_per_item, typename HashFamily,
-          template <size_t> class TableType>
+            template <size_t> class TableType>
   Status VacuumFilter<ItemType, bits_per_item, HashFamily, TableType>::Add(
       const ItemType &item)
   {
@@ -291,7 +311,7 @@ namespace cuckoofilter
   }
 
   template <typename ItemType, size_t bits_per_item, typename HashFamily,
-          template <size_t> class TableType>
+            template <size_t> class TableType>
   void VacuumFilter<ItemType, bits_per_item, HashFamily, TableType>::Add_many(
       const ItemType *key, bool *result, int key_n)
   {
@@ -326,7 +346,7 @@ namespace cuckoofilter
   }
 
   template <typename ItemType, size_t bits_per_item, typename HashFamily,
-          template <size_t> class TableType>
+            template <size_t> class TableType>
   bool VacuumFilter<ItemType, bits_per_item, HashFamily, TableType>::evict(
       const size_t i, const uint32_t tag)
   {
@@ -380,7 +400,7 @@ namespace cuckoofilter
   }
 
   template <typename ItemType, size_t bits_per_item, typename HashFamily,
-          template <size_t> class TableType>
+            template <size_t> class TableType>
   Status VacuumFilter<ItemType, bits_per_item, HashFamily, TableType>::AddImpl(
       const size_t i, const uint32_t tag)
   {
@@ -444,6 +464,19 @@ namespace cuckoofilter
 
   template <typename ItemType, size_t bits_per_item, typename HashFamily,
           template <size_t> class TableType>
+void VacuumFilter<ItemType, bits_per_item, HashFamily, TableType>::CopyInsert(
+    const uint32_t fp, const size_t index, const size_t slot) {
+  // if (table_->WriteTag(index, slot, fp)) {
+    table_->WriteTag(index, slot, fp);
+    num_items_++;
+    // std::cout << "copied " << fp << " to " << index << "\n";
+    // return Ok;
+  // }
+  // return NotSupported;
+}
+
+  template <typename ItemType, size_t bits_per_item, typename HashFamily,
+            template <size_t> class TableType>
   Status VacuumFilter<ItemType, bits_per_item, HashFamily, TableType>::Contain(
       const ItemType &key) const
   {
@@ -478,7 +511,7 @@ namespace cuckoofilter
   }
 
   template <typename ItemType, size_t bits_per_item, typename HashFamily,
-          template <size_t> class TableType>
+            template <size_t> class TableType>
   void VacuumFilter<ItemType, bits_per_item, HashFamily, TableType>::Contain_many(
       const ItemType *key, bool *result, int key_n)
   {
@@ -505,7 +538,7 @@ namespace cuckoofilter
   }
 
   template <typename ItemType, size_t bits_per_item, typename HashFamily,
-          template <size_t> class TableType>
+            template <size_t> class TableType>
   uint32_t VacuumFilter<ItemType, bits_per_item, HashFamily, TableType>::Contain_where(
       const ItemType &key) const
   {
@@ -527,7 +560,7 @@ namespace cuckoofilter
   }
 
   template <typename ItemType, size_t bits_per_item, typename HashFamily,
-          template <size_t> class TableType>
+            template <size_t> class TableType>
   void VacuumFilter<ItemType, bits_per_item, HashFamily, TableType>::Delete_many(
       const ItemType *key, bool *result, int key_n)
   {
@@ -556,7 +589,7 @@ namespace cuckoofilter
   }
 
   template <typename ItemType, size_t bits_per_item, typename HashFamily,
-          template <size_t> class TableType>
+            template <size_t> class TableType>
   Status VacuumFilter<ItemType, bits_per_item, HashFamily, TableType>::Delete(
       const ItemType &key)
   {
@@ -599,7 +632,7 @@ namespace cuckoofilter
   }
 
   template <typename ItemType, size_t bits_per_item, typename HashFamily,
-          template <size_t> class TableType>
+            template <size_t> class TableType>
   std::string VacuumFilter<ItemType, bits_per_item, HashFamily, TableType>::Info() const
   {
     std::stringstream ss;

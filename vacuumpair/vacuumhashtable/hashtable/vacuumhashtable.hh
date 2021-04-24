@@ -227,32 +227,33 @@ namespace vacuumhashtable
         std::pair<size_type, size_type> insert(K &&key)
         {
             // get hashed key
-            size_type hv = hashed_key(key);
+            const uint64_t hv = hashed_key(key);
             partial_t fp = partial_key(hv);
 
             // std::cout << "HT inserting " << key << " hv: " << hv << " fp: " << fp << "\n";
 
             // find position in table
             auto b = compute_buckets(key);
-            table_position pos = cuckoo_insert_loop(b, key); // finds insert spot, does not actually insert
+            table_position pos = cuckoo_insert(b, key); // finds insert spot, does not actually insert
             // std::cout << "HT inserting key " << key << ": " << pos.index << ", " << pos.slot << "\n";// status: " << pos.status << "\n";
 
             // add to bucket
             if (pos.status == ok)
             {
-                add_to_bucket(pos.index, pos.slot, fp, std::forward<K>(key));
+                // add_to_bucket(pos.index, pos.slot, fp, std::forward<K>(key));
                 num_items_++;
+                return std::make_pair(pos.index, pos.slot);
             }
             else
             {
                 std::cout << "status NOT ok: " << pos.status << "\n";
                 assert(pos.status == failure_key_duplicated);
             }
-            return std::make_pair(pos.index, pos.slot);
+            // return std::make_pair(pos.index, pos.slot);
         }
 
         /** Searches the table for @p key, and returns the associated value it
-   * finds. @c mapped_type must be @c CopyConstructible.
+   * finds. @c mapped_type must be @c CopyConstructible. NOTE: should be definite (NO false positive's!)
    *
    * @tparam K type of the key
    * @param key the key to search for
@@ -260,7 +261,7 @@ namespace vacuumhashtable
    * @throw std::out_of_range if the key is not found
    */
         template <typename K>
-        std::pair<int32_t, int32_t> find(const K &key) const // std::pair<size_type, size_type>
+        std::pair<int32_t, int32_t> find(const K &key) const // std::pair<size_type, size_type> for index, slot
         {
             // get hashed key
             // size_type hv = hashed_key(key);
@@ -297,6 +298,7 @@ namespace vacuumhashtable
             return num_lookup_rds_ - 1;
         }
 
+        // lookup fingerprint in buckets: false positive = increment seed for following rehash 
         template <typename K>
         std::pair<int32_t, int32_t> lookup(const K &key) const
         {
@@ -456,10 +458,13 @@ namespace vacuumhashtable
 
         // index_hash returns the first possible bucket that the given hashed key
         // could be.
-        static inline size_type index_hash(const size_type hp, const size_type key) // hv
+        inline size_type index_hash(const size_type key) const
         {
-            const uint32_t hash = key >> 32;
-            return hash & bucket_count();
+            const uint64_t hv = hashed_key(key);
+            const uint64_t hash = hv >> 32;
+            return (((uint64_t)hash * (uint64_t)bucket_count()) >> 32);
+            // const uint32_t hash = key >> 32;
+            // return hash & bucket_count();
             // return hash & hashmask(hp);
             // return hv & hashmask(hp);
         }
@@ -469,21 +474,25 @@ namespace vacuumhashtable
         // this function will return the first possible bucket if index is the
         // second possible bucket, so alt_index(ti, partial, alt_index(ti, partial,
         // index_hash(ti, hv))) == index_hash(ti, hv).
-        static inline size_type alt_index(const size_type hp, const size_type key,
-                                          const size_type index)
+        inline size_type alt_index(const size_type index,
+                                          const size_type key) const
         {
+            int t = key * 0x5bd1e995;
+            int seg = len[key & (AR - 1)];
+            t = t & seg;
+            return index ^ t;
             // (libcuckoo) ensure fp i6s nonzero for the multiply. 0xc6a4a7935bd1e995 is the
             // hash constant from 64-bit MurmurHash2
             // const size_type nonzero_fp = static_cast<size_type>(partial) + 1;
             // (DRECHT) ensure fp is nonzero for the multiply
 
             // >> (right shift)
-            const size_t fp = (key >> hp) + 1;
+            // const size_t fp = (key >> hp) + 1;
             // std::cout << "HT hp: " << hp << ", right shift: " << fp << "key: " << key << "\n";
 
             // ^ (bitwise XOR), & (bitwise AND)
             // std::cout << "HT hashmask(hp): " << hashmask(hp) << "\n";
-            return (index ^ (fp * 0xc6a4a7935bd1e995)) & hashmask(hp);
+            // return (index ^ (fp * 0xc6a4a7935bd1e995)) & hashmask(hp);
         }
 
         class TwoBuckets
@@ -502,9 +511,9 @@ namespace vacuumhashtable
         // throws hashpower_changed if it changed after taking the lock.
         TwoBuckets compute_buckets(const size_type key) const // size_type, size_type i1, size_type i2
         {
-            const size_type hp = hashpower();
-            const size_type i1 = index_hash(hp, key);
-            const size_type i2 = alt_index(hp, key, i1);
+            // const size_type hp = hashpower();
+            const size_type i1 = index_hash(key);
+            const size_type i2 = alt_index(i1, key);
             // std::cout << key << ": HT computed buckets " << i1 << " and " << i2 << "\n";
             return TwoBuckets(i1, i2);
         }
@@ -616,7 +625,7 @@ namespace vacuumhashtable
    * @throw load_factor_too_low if expansion is necessary, but the
    * load factor of the table is below the threshold
    */
-        template <typename K>
+        template <typename K> // remodel after AddImpl in vacuum filter
         table_position cuckoo_insert_loop(TwoBuckets &b, K &key)
         {
             table_position pos;
@@ -670,44 +679,121 @@ namespace vacuumhashtable
         template <typename K>
         table_position cuckoo_insert(TwoBuckets &b, K &&key)
         {
-            int res1, res2; // gets indices
+            // int res1, res2; // gets indices/slot
+            size_t curindex = b.i1;
+            K curkey = key;
+            size_type oldkey;
+
+            size_type keys[4];
+            size_type tmp_keys[4];
+
             bucket &b1 = buckets_[b.i1];
             // std::cout << "b1: " << b.i1 << "\n";
-            if (!try_find_insert_bucket(b1, res1, key))
+            int potential_slot = insert_key_to_bucket(curindex, curkey, false, oldkey, keys);
+            if (potential_slot >= 0) // !try_find_insert_bucket(b1, res1, key)
             {
-                return table_position{b.i1, static_cast<size_type>(res1),
-                                      failure_key_duplicated};
+                return table_position{b.i1, static_cast<size_type>(potential_slot),
+                                      ok};
             }
             bucket &b2 = buckets_[b.i2];
             // std::cout << "b2: " << b.i2 << "\n";
-            if (!try_find_insert_bucket(b2, res2, key))
+            uint32_t altbucket = b.i2;
+            potential_slot = insert_key_to_bucket(altbucket, curkey, false, oldkey, keys);
+            if (potential_slot >= 0) // !try_find_insert_bucket(b2, res2, key)
             {
-                return table_position{b.i2, static_cast<size_type>(res2),
-                                      failure_key_duplicated};
+                return table_position{b.i2, static_cast<size_type>(potential_slot),
+                                      ok};
             }
-            if (res1 != -1)
-            {
-                return table_position{b.i1, static_cast<size_type>(res1), ok};
-            }
-            if (res2 != -1)
-            {
-                return table_position{b.i2, static_cast<size_type>(res2), ok};
-            }
+            // if (res1 != -1)
+            //     return table_position{b.i1, static_cast<size_type>(res1), ok};
+            // if (res2 != -1)
+            //     return table_position{b.i2, static_cast<size_type>(res2), ok};
 
             // We are unlucky, so let's perform cuckoo hashing ~
-            size_type insert_bucket = 0;
-            size_type insert_slot = 0;
-            vacuum_status st = run_cuckoo(b, insert_bucket, insert_slot);
-            if (st == ok)
-            {
-                assert(!buckets_[insert_bucket].occupied(insert_slot));
-                assert(insert_bucket == index_hash(hashpower(), key) || insert_bucket == alt_index(hashpower(), key, index_hash(hashpower(), key)));
 
-                return table_position{insert_bucket, insert_slot, ok};
+            // maximum number of cuckoo kicks before claiming failure
+            const size_t kMaxCuckooCount = 500;
+            for (uint32_t count = 0; count < kMaxCuckooCount; count++)
+            {
+                oldkey = 0;
+                potential_slot = insert_key_to_bucket(curindex, curkey, false, oldkey, keys);
+                if (potential_slot >= 0) // !try_find_insert_bucket(b1, res1, key)
+                {
+                    return table_position{curindex, static_cast<size_type>(potential_slot),
+                                          ok};
+                }
+                for (int i = 0; i < 4; i++)
+                {
+                    int alt = alt_index(curindex, keys[i]);
+                    potential_slot = insert_key_to_bucket(alt, keys[i], false, oldkey, tmp_keys);
+                    if (potential_slot >= 0)
+                    {
+                        keys[i] = curkey;
+                        write_bucket(curindex, keys, true, i);
+                        return table_position{curindex, static_cast<size_type>(potential_slot),
+                                              ok};
+                    }
+                }
+
+                int r = rand() % 4;
+                oldkey = keys[r];
+                keys[r] = curkey;
+                write_bucket(curindex, keys, true, r);
+                curkey = oldkey;
+                curindex = alt_index(curindex, curkey);
             }
-            assert(st == failure);
-            std::cout << "hashtable is full (hashpower = " << hashpower() << ", hash_items = " << size() << ", load factor = " << load_factor() << "), need to increase hashpower\n";
-            return table_position{0, 0, failure_table_full};
+            // victim assignments...
+            return table_position{curindex, static_cast<size_type>(potential_slot),
+                                  ok};
+            // size_type insert_bucket = 0;
+            // size_type insert_slot = 0;
+            // vacuum_status st = run_cuckoo(b, insert_bucket, insert_slot);
+            // if (st == ok)
+            // {
+            //     assert(!buckets_[insert_bucket].occupied(insert_slot));
+            //     assert(insert_bucket == index_hash(key) || insert_bucket == alt_index(index_hash(key), key));
+
+            //     return table_position{insert_bucket, insert_slot, ok};
+            // }
+            // assert(st == failure);
+            // std::cout << "hashtable is full (hashpower = " << hashpower() << ", hash_items = " << size() << ", load factor = " << load_factor() << "), need to increase hashpower\n";
+            // return table_position{0, 0, failure_table_full};
+        }
+
+        // copying InsertTagToBucket from vacuum filter (singletable)
+        template <typename K>
+        int insert_key_to_bucket(const size_t i, K &&key, const bool kickout, size_type &oldkey, size_type *keys)
+        {
+            bucket &b = buckets_[i];
+            const uint64_t hv = hashed_key(key);
+            partial_t fp = partial_key(hv);
+
+            for (size_t j = 0; j < slot_per_bucket(); j++)
+            {
+                keys[j] = b.key(j);
+                if (!b.occupied(j))
+                {
+                    add_to_bucket(i, j, fp, key);
+                    return j;
+                }
+            }
+            if (kickout)
+            {
+                size_t r = rand() % slot_per_bucket();
+                oldkey = keys[r];
+                add_to_bucket(i, r, fp, key);
+            }
+            return -1;
+        } // , typename... Args
+
+        // copying WriteBucket from vacuum filter (singletable)
+        template <typename K>
+        void write_bucket(const size_t i, K keys[4], bool sort = true, int pos = 4)
+        {
+            const uint64_t hv = hashed_key(keys[pos]);
+            partial_t fp = partial_key(hv);
+            buckets_.eraseK(i, pos);
+            add_to_bucket(i, pos, fp, keys[pos]);
         }
 
         // add_to_bucket will insert the given key-value pair into the slot. The key
@@ -1008,7 +1094,7 @@ namespace vacuumhashtable
             b_queue q;
             // The initial pathcode informs cuckoopath_search which bucket the path starts on
             q.enqueue(b_slot(i1, 0, 0));
-            q.enqueue(b_slot(i2, 1, 0));
+            q.enqueue(b_slot(i2, 1, 0)); // bucket, pathcode, depth
             while (!q.empty())
             {
                 b_slot x = q.dequeue();
@@ -1139,8 +1225,9 @@ namespace vacuumhashtable
             std::cout << "alt range setting : ";
             for (int i = 0; i < AR; i++)
                 std::cout << len[i] + 1 << ", ";
-            std::cout << std::endl << "returning buckets: " << buckets << "\n";
-            
+            std::cout << std::endl
+                      << "returning buckets: " << buckets << "\n";
+
             return buckets;
 
             /*
