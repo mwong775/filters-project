@@ -36,8 +36,12 @@ public:
 
         zero_fp_rehash(r, s);
 
+        // table_->printAllBuckets();
+
         vector<vector<KeyType>> fp_table;
         table_->export_table(fp_table);
+
+        table_->seedInfo();
 
         filter_ = new cuckoofilter::VacuumFilter<KeyType, bits_per_fp, Hash>(size_, table_->get_seeds());
 
@@ -50,7 +54,7 @@ public:
         info();
     }
 
-    // ~cuckoopair()
+    // ~vacuumpair()
     // {
     //     delete table_;
     //     delete filter_;
@@ -96,7 +100,7 @@ public:
                 total_queries++;
 
                 std::pair<int32_t, int32_t> indices = table_->lookup(l);
-                if (indices.first >= 0 || indices.second >= 0) //
+                if (indices.first >= 0 || indices.second >= 0)
                 {
                     if (indices.first >= 0)
                     {
@@ -125,7 +129,7 @@ public:
             else
                 break;
         }
-        // cout << table_->info();
+        cout << table_->info();
     }
 
     template <typename K>
@@ -137,10 +141,7 @@ public:
             // cout << "bucket size: " << b.size() << "\n";
 
             for (int j = 0; j < b.size(); j++)
-            {
-                filter_->CopyInsert(b.at(j), i, j);
-                // assert(filter_->CopyInsert(b.at(j), i, j) == cuckoofilter::Ok);
-            }
+                assert(filter_->CopyInsert(b.at(j), i, j) == cuckoofilter::Ok);
         }
 
         cout << "Filter: finish inserting " << table_->size() << " items\n";
@@ -150,24 +151,26 @@ public:
     void check_lookup_filter(vector<K> &r, vector<K> &s)
     {
         // check no false negatives - failing here with sizes above 10k :(
-        cout << "\nChecking VF false negatives:\n";
+        cout << "\nChecking VF false negatives...\n";
         for (auto c : r)
             assert(filter_->Contain(c) == cuckoofilter::Ok);
 
         size_t total_queries = 0;
         size_t false_queries = 0;
+        // checking false positives (should be 0 after rehashes)
+        cout << "Now checking VF false positives...\n";
         for (auto l : s)
         {
             if (filter_->Contain(l) == cuckoofilter::Ok)
                 false_queries++;
             total_queries++;
         }
-
         assert(false_queries == 0);
+        // assert(total_queries == filter_->Size() * 100);
     }
-    
-    
-    cuckoofilter::VacuumFilter<KeyType, bits_per_fp, Hash> get_filter() {
+
+    cuckoofilter::VacuumFilter<KeyType, bits_per_fp, Hash> get_filter()
+    {
         return *filter_;
     }
 

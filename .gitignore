@@ -1,11 +1,6 @@
-#*
-#*#
-*#
-*.*#
-*.class
-*.dSYM
-*.la
-*.lo
-*.o
-*.so
-test
+*
+!*.cc
+!*.hh
+!*.csv
+# !Makefile
+!*.md

@@ -117,14 +117,15 @@ namespace cuckoofilter
 
     HashFamily hasher_;
 
-    std::vector<uint8_t> seeds_;
+    std::vector<int> seeds_;
 
     int big_seg;
     int len[AR];
 
-    inline size_t IndexHash(uint32_t hv) const
+    inline size_t IndexHash(const ItemType &item) const
     {
-      return (((uint64_t)hv * (uint64_t)table_->NumBuckets()) >> 32);
+      const uint32_t hash = item >> 32;
+      return (((uint64_t)hash * (uint64_t)table_->NumBuckets()) >> 32);
     }
 
     inline uint32_t TagHash(uint32_t hv) const
@@ -138,8 +139,8 @@ namespace cuckoofilter
     inline void GenerateIndexTagHash(const ItemType &item, size_t *index,
                                      uint32_t *tag) const
     {
+      *index = IndexHash(item);
       const uint64_t hash = hasher_(item, seeds_.at(*index));
-      *index = IndexHash(hash >> 32);
       *tag = TagHash(hash);
     }
 
@@ -147,10 +148,10 @@ namespace cuckoofilter
     inline void GenerateTagHashes(const ItemType &item, size_t *i1, size_t *i2,
                                   uint32_t *tag1, uint32_t *tag2) const
     {
+      *i1 = IndexHash(item); // original: hash >> 32
+      *i2 = AltIndex(*i1, item);
       const uint64_t hash1 = hasher_(item, seeds_.at(*i1));
       const uint64_t hash2 = hasher_(item, seeds_.at(*i2));
-      *i1 = IndexHash(hash1 >> 32); // original: hash >> 32
-      *i2 = AltIndex(*i1, item);
       *tag1 = TagHash(hash1);
       *tag2 = TagHash(hash2);
     }
@@ -172,7 +173,7 @@ namespace cuckoofilter
     Status AddImpl(const size_t i, const uint32_t tag);
 
   public:
-    explicit VacuumFilter(const size_t max_num_keys, const std::vector<uint8_t> &seeds = std::vector<uint8_t>(), bool aligned = false, bool _packed = false) : num_items_(0), victim_(), hasher_()
+    explicit VacuumFilter(const size_t max_num_keys, bool aligned = false, bool _packed = false) : num_items_(0), victim_(), hasher_()
     {
 
       std::cout << "good" << std::endl;
@@ -180,9 +181,6 @@ namespace cuckoofilter
       size_t assoc = 4;
       size_t num_buckets;
       packed = _packed;
-
-      if (seeds.size())
-        seeds_ = seeds;
 
       if (aligned)
       {
@@ -248,6 +246,63 @@ namespace cuckoofilter
 
       table_ = new TableType<bits_per_item>(num_buckets);
     }
+    
+    // modified constructor
+    explicit VacuumFilter(const size_t max_num_keys, const std::vector<int> &seeds = std::vector<uint8_t>(), bool aligned = false, bool _packed = false) : num_items_(0), victim_(), hasher_()
+    {
+
+      std::cout << "good" << std::endl;
+      srand(1);
+      size_t assoc = 4;
+      size_t num_buckets;
+      packed = _packed;
+
+      seeds_ = seeds;
+
+      if (aligned)
+      {
+        num_buckets = upperpower2(std::max<uint64_t>(1, max_num_keys / assoc));
+        if (num_buckets < 128)
+          num_buckets = 128;
+
+        double frac = (double)max_num_keys / num_buckets / assoc;
+
+        // if (frac > 0.96)
+        // {
+          //num_buckets <<= 1;
+        // }
+        for (int i = 0; i < AR; i++)
+          len[i] = num_buckets - 1;
+      }
+      else
+      { // this is default
+        big_seg = 0;
+        big_seg = std::max(big_seg, proper_alt_range(max_num_keys / assoc, 0, len));
+        big_seg = std::max(big_seg, 1024);
+        num_buckets = ROUNDUP(int(max_num_keys / assoc), big_seg);
+
+        big_seg--;
+        len[0] = big_seg;
+        for (int i = 1; i < AR; i++) // sets all alt ranges
+          len[i] = proper_alt_range(num_buckets, i, len) - 1;
+        len[AR - 1] = (len[AR - 1] + 1) * 2 - 1;
+        if (AR == 1)
+          num_buckets = ROUNDUP(int(max_num_keys / assoc), len[0] + 1);
+      }
+
+      assert(seeds_.size() == num_buckets); // double-check calculations match
+
+      victim_.used = false;
+
+      std::cout << "num_buckets = " << num_buckets << std::endl;
+      //std::cout << "big_segment_length = " << big_seg << std::endl;
+      std::cout << "alt range setting : ";
+      for (int i = 0; i < AR; i++)
+        std::cout << len[i] + 1 << ", ";
+      std::cout << std::endl;
+
+      table_ = new TableType<bits_per_item>(num_buckets);
+    }
 
     ~VacuumFilter() { delete table_; }
 
@@ -260,7 +315,7 @@ namespace cuckoofilter
     bool evict(const size_t i, const uint32_t tag);
 
     // Insert item to the filter at given bucket index and slot.
-    void CopyInsert(const uint32_t fp, size_t index, size_t slot);
+    Status CopyInsert(const uint32_t fp, size_t index, size_t slot);
 
     // Report if the item is inserted, with false positive rate.
     Status Contain(const ItemType &item) const;
@@ -276,6 +331,8 @@ namespace cuckoofilter
 
     // Delete an key from the filter
     void Delete_many(const ItemType *item, bool *result, int key_n);
+
+    size_t SeedTable_Size() const;
 
     /* methods for providing stats  */
     // summary infomation
@@ -464,15 +521,15 @@ namespace cuckoofilter
 
   template <typename ItemType, size_t bits_per_item, typename HashFamily,
           template <size_t> class TableType>
-void VacuumFilter<ItemType, bits_per_item, HashFamily, TableType>::CopyInsert(
+Status VacuumFilter<ItemType, bits_per_item, HashFamily, TableType>::CopyInsert(
     const uint32_t fp, const size_t index, const size_t slot) {
-  // if (table_->WriteTag(index, slot, fp)) {
-    table_->WriteTag(index, slot, fp);
+  if (table_->CopyTagToBucket(index, slot, fp)) {
+    // table_->WriteTag(index, slot, fp);
     num_items_++;
     // std::cout << "copied " << fp << " to " << index << "\n";
-    // return Ok;
-  // }
-  // return NotSupported;
+    return Ok;
+  }
+  return NotSupported;
 }
 
   template <typename ItemType, size_t bits_per_item, typename HashFamily,
@@ -482,17 +539,32 @@ void VacuumFilter<ItemType, bits_per_item, HashFamily, TableType>::CopyInsert(
   {
     bool found = false;
     size_t i1, i2;
-    uint32_t tag;
 
-    GenerateIndexTagHash(key, &i1, &tag);
+   uint32_t tag1, tag2;
 
-    if ((victim_.used && i1 == victim_.index && tag == victim_.tag) || table_->FindTagInBucket(i1, tag))
+    GenerateTagHashes(key, &i1, &i2, &tag1, &tag2);
+    assert(i1 == AltIndex(i2, key));
+
+    // std::cout << "lup " << tag1 << ", " << tag2 << ": " << i1 << ", " << i2
+    //           << "\n";
+
+    // found = victim_.used && (tag1 == victim_.tag || tag2 == victim_.tag) &&
+    //         (i1 == victim_.index || i2 == victim_.index);
+
+    if (table_->FindTagInBuckets(i1, i2, tag1, tag2)) // found ||
       return Ok;
 
-    i2 = AltIndex(i1, tag);
+    // uint32_t tag;
 
-    if ((victim_.used && i2 == victim_.index && tag == victim_.tag) || table_->FindTagInBucket(i2, tag))
-      return Ok;
+    // GenerateIndexTagHash(key, &i1, &tag);
+
+    // if ((victim_.used && i1 == victim_.index && tag == victim_.tag) || table_->FindTagInBucket(i1, tag))
+    //   return Ok;
+
+    // i2 = AltIndex(i1, tag);
+
+    // if ((victim_.used && i2 == victim_.index && tag == victim_.tag) || table_->FindTagInBucket(i2, tag))
+    //   return Ok;
 
     return NotFound;
 
@@ -632,15 +704,27 @@ void VacuumFilter<ItemType, bits_per_item, HashFamily, TableType>::CopyInsert(
   }
 
   template <typename ItemType, size_t bits_per_item, typename HashFamily,
+          template <size_t> class TableType>
+size_t VacuumFilter<ItemType, bits_per_item, HashFamily, TableType>::SeedTable_Size() const {
+  return sizeof(std::vector<int>) + (sizeof(int) * seeds_.size());
+}
+
+  template <typename ItemType, size_t bits_per_item, typename HashFamily,
             template <size_t> class TableType>
   std::string VacuumFilter<ItemType, bits_per_item, HashFamily, TableType>::Info() const
   {
     std::stringstream ss;
+    size_t table_size = table_->SizeInBytes();
+    size_t seedtable_size = SeedTable_Size();
+    size_t total_size = table_size + seedtable_size;
     ss << "VacuumFilter Status:\n"
        << "\t\t" << table_->Info() << "\n"
        << "\t\tKeys stored: " << Size() << "\n"
        << "\t\tLoad factor: " << LoadFactor() << "\n"
-       << "\t\tHashtable size: " << (table_->SizeInBytes() >> 10) << " KB\n";
+      //  << "\t\tHashtable size: " << (table_->SizeInBytes() >> 10) << " KB\n";
+      << "\t\tHashtable size: " 
+     << table_size << " (table) + " << seedtable_size << " (seeds) = " << total_size << " bytes ("
+     << (table_size >> 10) << " KB)\n";
     if (Size() > 0)
     {
       ss << "\t\tbit/key:   " << BitsPerItem() << "\n";

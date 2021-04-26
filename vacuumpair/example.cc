@@ -49,7 +49,7 @@ int main(int argc, char **argv)
 
     vacuumhashtable::vacuum_hashtable<KeyType, 12, CityHasher<KeyType>> table(init_size);
 
-    cuckoofilter::VacuumFilter<KeyType, 12, CityHasher<KeyType>> vf(init_size);
+    // cuckoofilter::VacuumFilter<KeyType, 12, CityHasher<KeyType>> vf(init_size);
 
     // add set R to table
     for (KeyType c : r)

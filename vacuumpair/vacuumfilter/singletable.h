@@ -121,6 +121,7 @@ class SingleTable {
     }
   }
 
+  // vacuum - assuming 4 slots per bucket
   inline void ReadBucket(const size_t i, uint32_t *tag)
   {
     tag[0] = ReadTag(i, 0);
@@ -130,30 +131,32 @@ class SingleTable {
   }
 
   inline bool FindTagInBuckets(const size_t i1, const size_t i2,
-                               const uint32_t tag) const {
-    const char *p1 = buckets_[i1].bits_;
-    const char *p2 = buckets_[i2].bits_;
+                               const uint32_t tag1, const uint32_t tag2) const {
+    return FindTagInBucket(i1, tag1) || FindTagInBucket(i2, tag2);
 
-    uint64_t v1 = *((uint64_t *)p1);
-    uint64_t v2 = *((uint64_t *)p2);
+    // const char *p1 = buckets_[i1].bits_;
+    // const char *p2 = buckets_[i2].bits_;
 
-    // caution: unaligned access & assuming little endian
-    if (bits_per_tag == 4 && kTagsPerBucket == 4) {
-      return hasvalue4(v1, tag) || hasvalue4(v2, tag);
-    } else if (bits_per_tag == 8 && kTagsPerBucket == 4) {
-      return hasvalue8(v1, tag) || hasvalue8(v2, tag);
-    } else if (bits_per_tag == 12 && kTagsPerBucket == 4) {
-      return hasvalue12(v1, tag) || hasvalue12(v2, tag);
-    } else if (bits_per_tag == 16 && kTagsPerBucket == 4) {
-      return hasvalue16(v1, tag) || hasvalue16(v2, tag);
-    } else {
-      for (size_t j = 0; j < kTagsPerBucket; j++) {
-        if ((ReadTag(i1, j) == tag) || (ReadTag(i2, j) == tag)) {
-          return true;
-        }
-      }
-      return false;
-    }
+    // uint64_t v1 = *((uint64_t *)p1);
+    // uint64_t v2 = *((uint64_t *)p2);
+
+    // // caution: unaligned access & assuming little endian
+    // if (bits_per_tag == 4 && kTagsPerBucket == 4) {
+    //   return hasvalue4(v1, tag) || hasvalue4(v2, tag);
+    // } else if (bits_per_tag == 8 && kTagsPerBucket == 4) {
+    //   return hasvalue8(v1, tag) || hasvalue8(v2, tag);
+    // } else if (bits_per_tag == 12 && kTagsPerBucket == 4) {
+    //   return hasvalue12(v1, tag) || hasvalue12(v2, tag);
+    // } else if (bits_per_tag == 16 && kTagsPerBucket == 4) {
+    //   return hasvalue16(v1, tag) || hasvalue16(v2, tag);
+    // } else {
+    //   for (size_t j = 0; j < kTagsPerBucket; j++) {
+    //     if ((ReadTag(i1, j) == tag) || (ReadTag(i2, j) == tag)) {
+    //       return true;
+    //     }
+    //   }
+    //   return false;
+    // }
   }
 
   inline bool FindTagInBucket(const size_t i, const uint32_t tag) const {
@@ -208,6 +211,16 @@ class SingleTable {
       size_t r = rand() % kTagsPerBucket;
       oldtag = tags[r];
       WriteTag(i, r, tag);
+    }
+    return false;
+  }
+
+  // copies tag into specified index and slot in table
+  inline bool CopyTagToBucket(const size_t i, const size_t j,
+                              const uint32_t tag) {
+    if (ReadTag(i, j) == 0) {
+      WriteTag(i, j, tag);
+      return true;
     }
     return false;
   }

@@ -166,10 +166,11 @@ namespace vacuumhashtable
         }
 
         // bucket seeds info
-        void seedInfo(std::map<uint8_t, uint16_t> &seed_map) const
+        void seedInfo() const
         {
             // can use unordered map to track quantity of each rehash count (e.g. lots of 1's, less 2's, etc.)
-            // std::cout << "Bucket Seed Info:\n";
+            std::cout << "Bucket Seed Info:\n";
+            std::map<int, uint16_t> seed_map;
             for (size_t i = 0; i < bucket_count(); i++)
             {
                 // printSeed(i);
@@ -188,6 +189,20 @@ namespace vacuumhashtable
         {
             // if (seeds_.at(i) > 5)
             std::cout << i << ": [ " << seeds_.at(i) << " ]\n";
+        }
+
+        void printAllBuckets() {
+            for (size_t i = 0; i < bucket_count(); i++) {
+                if (seeds_.at(i))
+                    printBucket(i);
+            }
+        }
+
+        void printAllSeeds() {
+            for (size_t i = 0; i < bucket_count(); i++) {
+                if (seeds_.at(i))
+                    printSeed(i);
+            }
         }
 
         void printBucket(const size_t i)
@@ -300,7 +315,7 @@ namespace vacuumhashtable
 
         // lookup fingerprint in buckets: false positive = increment seed for following rehash 
         template <typename K>
-        std::pair<int32_t, int32_t> lookup(const K &key) const
+        std::pair<int32_t, int32_t> lookup(const K &key) // const
         {
             // find position in table
             auto b = compute_buckets(key);
@@ -328,11 +343,12 @@ namespace vacuumhashtable
                     // if (pos1.index != b.i1)
                     //     return -1;
 
-                    uint8_t &seed = seeds_.at(pos1.index);
+                    int &seed = seeds_.at(pos1.index);
                     if (seed < num_lookup_rds_)
                     {
                         seed++;
-                        // std::cout << "fp on key: " << key << " hv: " << hv << " fp: " << fp << " at pos " << pos.index << ", " << pos.slot << ", seed to " << seed << "\n";
+                        // seeds_.at(pos1.index)++;
+                        // std::cout << "fp on key: " << key << " hv: " << hv1 << " fp: " << fp1 << " at pos " << pos1.index << ", " << pos1.slot << ", seed to " << seed << "\n";
                     }
                     // return fp1;
                     // return pos1.index;
@@ -349,11 +365,11 @@ namespace vacuumhashtable
                 if (pos2.status == ok)
                 {
                     assert(pos2.index == b.i2);
-                    uint8_t &seed = seeds_.at(pos2.index);
+                    int &seed = seeds_.at(pos2.index);
                     if (seed < num_lookup_rds_)
                     {
                         seed++;
-                        // std::cout << "fp on key: " << key << " hv: " << hv << " fp: " << fp << " at pos " << pos.index << ", " << pos.slot << ", seed to " << seed << "\n";
+                        // std::cout << "fp on key: " << key << " hv: " << hv2 << " fp: " << fp2 << " at pos " << pos2.index << ", " << pos2.slot << ", seed to " << seed << "\n";
                     }
                     // return fp2;
                     i2 = pos2.index;
@@ -375,7 +391,7 @@ namespace vacuumhashtable
                     last_index = i;
                     b_count++;
                     bucket &b = buckets_[i];
-                    for (uint8_t j = 0; j < static_cast<int>(slot_per_bucket()); ++j)
+                    for (int j = 0; j < static_cast<int>(slot_per_bucket()); ++j)
                     {
                         // rehash fp's at bucket index i
                         const size_type key = b.key(j);
@@ -387,18 +403,18 @@ namespace vacuumhashtable
                 }
             }
 
-            // if (b_count == 1)
-            //     cout << "LAST REHASHED BUCKET: " << last_index << "\n";
+            // if (b_count)
+            //     std::cout << "LAST REHASHED BUCKET: " << last_index << ", value: " << seeds_.at(last_index) << "\n";
 
             return b_count;
         }
 
-        uint8_t get_seed(const size_t i) const
+        int get_seed(const size_t i) const
         {
             return seeds_.at(i);
         }
 
-        std::vector<uint8_t> get_seeds() const
+        std::vector<int> get_seeds() const
         { // std::vector<int> &seeds
             return seeds_;
             // seeds.resize(seeds_.size());
@@ -460,8 +476,8 @@ namespace vacuumhashtable
         // could be.
         inline size_type index_hash(const size_type key) const
         {
-            const uint64_t hv = hashed_key(key);
-            const uint64_t hash = hv >> 32;
+            // const uint64_t hv = hashed_key(key);
+            const uint64_t hash = key >> 32;
             return (((uint64_t)hash * (uint64_t)bucket_count()) >> 32);
             // const uint32_t hash = key >> 32;
             // return hash & bucket_count();
@@ -852,7 +868,7 @@ namespace vacuumhashtable
 
         // The maximum number of items in a cuckoo BFS path. It determines the
         // maximum number of slots we search when cuckooing.
-        static constexpr uint8_t MAX_BFS_PATH_LEN = 5;
+        static constexpr int MAX_BFS_PATH_LEN = 5;
 
         // An array of CuckooRecords
         using CuckooRecords = std::array<CuckooRecord, MAX_BFS_PATH_LEN>;
@@ -1036,98 +1052,6 @@ namespace vacuumhashtable
             }
         };
 
-        // b_queue is the queue used to store b_slots for BFS cuckoo hashing.
-        class b_queue
-        {
-        public:
-            b_queue() noexcept : first_(0), last_(0) {}
-
-            void enqueue(b_slot x)
-            {
-                assert(!full());
-                slots_[last_++] = x;
-            }
-
-            b_slot dequeue()
-            {
-                assert(!empty());
-                assert(first_ < last_);
-                b_slot &x = slots_[first_++];
-                return x;
-            }
-
-            bool empty() const { return first_ == last_; }
-
-            bool full() const { return last_ == MAX_CUCKOO_COUNT; }
-
-        private:
-            // The size of the BFS queue. It holds just enough elements to fulfill a
-            // MAX_BFS_PATH_LEN search for two starting buckets, with no circular
-            // wrapping-around. For one bucket, this is the geometric sum
-            // sum_{k=0}^{MAX_BFS_PATH_LEN-1} slot_per_bucket()^k = (1 - slot_per_bucket()^MAX_BFS_PATH_LEN) / (1 - slot_per_bucket())
-            //
-            // Note that if slot_per_bucket() == 1, then this simply equals MAX_BFS_PATH_LEN.
-            static_assert(slot_per_bucket() > 0, "SLOT_PER_BUCKET msut be greater than 0!");
-            static constexpr size_type MAX_CUCKOO_COUNT =
-                2 * ((slot_per_bucket() == 1)
-                         ? MAX_BFS_PATH_LEN
-                         : (const_pow(slot_per_bucket(), MAX_BFS_PATH_LEN) - 1) /
-                               (slot_per_bucket() - 1));
-
-            // An array of b_slots. Since we allocate just enough space to complete a full search,
-            // we should never exceed the end of the array.
-            b_slot slots_[MAX_CUCKOO_COUNT];
-            // The index of the head of the queue in the array
-            size_type first_;
-            // One past the index of the last_ item of the queue in the array.
-            size_type last_;
-        };
-
-        // slot_search searches for a cuckoo path using breadth-first search. It
-        // starts with the i1 and i2 buckets, and, until it finds a bucket with an
-        // empty slot, adds each slot of the bucket in the b_slot. If the queue runs
-        // out of space, it fails.
-        //
-        // throws hashpower_changed if it changed during the search
-        b_slot slot_search(const size_type hp, const size_type i1, const size_type i2)
-        {
-            b_queue q;
-            // The initial pathcode informs cuckoopath_search which bucket the path starts on
-            q.enqueue(b_slot(i1, 0, 0));
-            q.enqueue(b_slot(i2, 1, 0)); // bucket, pathcode, depth
-            while (!q.empty())
-            {
-                b_slot x = q.dequeue();
-                bucket &b = buckets_[x.bucket];
-                // Picks a (sort-of) random slot to start from
-                size_type starting_slot = x.pathcode % slot_per_bucket();
-                for (size_type i = 0; i < slot_per_bucket(); ++i)
-                {
-                    uint16_t slot = (starting_slot + i) % slot_per_bucket();
-                    if (!b.occupied(slot))
-                    {
-                        // We can terminate the search here
-                        x.pathcode = x.pathcode * slot_per_bucket() + slot;
-                        return x;
-                    }
-
-                    // If x has less than the maximum number of path components,
-                    // create a new b_slot item, that represents the bucket we could
-                    // have to come from if we kicked out the item at this slot.
-                    const size_type key = b.key(slot);
-                    if (x.depth < MAX_BFS_PATH_LEN - 1)
-                    {
-                        assert(!q.full());
-                        b_slot y(alt_index(hp, key, x.bucket), x.pathcode * slot_per_bucket() + slot, x.depth + 1);
-                        q.enqueue(y);
-                    }
-                }
-            }
-            // We didn't find a short-enough cuckoo path, so the search terminated :(
-            // Return a failure value
-            return b_slot(0, 0, -1);
-        }
-
         // Miscellaneous functions
 
         // functions for determining AR in vacuum
@@ -1256,7 +1180,7 @@ namespace vacuumhashtable
         // necessary.
         mutable buckets_t buckets_;
 
-        mutable std::vector<uint8_t> seeds_;
+        std::vector<int> seeds_;
         mutable size_t num_lookup_rds_;
 
         // vacuum
