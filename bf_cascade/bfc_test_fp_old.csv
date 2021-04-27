@@ -1,0 +1,21 @@
+revoked, unrevoked
+262328, 28341276
+Bloom Filter Cascade
+level, insert, lookup, # fp's, fp, memory(bytes), bits per item
+1, 262328, 28341276, 2862, 0.00010, 628701, 19.17297
+2, 2862, 262328, 28, 0.00011, 6859, 19.17261
+3, 28, 2862, 0, 0.00000, 67, 19.14286
+bfc insert time
+2.549365
+bf lookup time
+588.644927
+
+revoked, unrevoked
+262328, 28341276
+Bloom Filter Cascade
+level, insert, lookup, # fp's, fp, memory(bytes), bits per item
+1, 262328, 28341276, 28160, 0.00099, 471458, 14.37766
+2, 28160, 262328, 294, 0.00112, 50610, 14.37784
+3, 294, 28160, 34, 0.00121, 529, 14.39456
+4, 34, 294, 0, 0.00000, 61, 14.35294
+
