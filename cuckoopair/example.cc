@@ -78,7 +78,7 @@ vector<uint8_t> hashtable_ops(const uint64_t &init_size, vector<KeyType> &r, vec
             total_queries++;
 
             std::pair<int32_t, int32_t> indices = table.lookup(l);
-            if (indices.first >= 0 || indices.second >= 0) //
+            if (indices.first >= 0 || indices.second >= 0)
             {
                 if (indices.first >= 0)
                 {

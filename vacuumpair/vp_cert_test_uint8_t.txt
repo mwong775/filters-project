@@ -1,0 +1,160 @@
+buckets = 73728
+alt range setting : 8192, 128, 32, 32, 
+returning buckets: 73728
+Hashtable: finish inserting 262328 items
+total false positives: 49411 out of 28341276, fp rate: 0.174343%
+total false positives: 24928 out of 28341276, fp rate: 0.0879565%
+total false positives: 12620 out of 28341276, fp rate: 0.0445287%
+total false positives: 6440 out of 28341276, fp rate: 0.022723%
+total false positives: 3397 out of 28341276, fp rate: 0.0119861%
+total false positives: 1747 out of 28341276, fp rate: 0.00616415%
+total false positives: 923 out of 28341276, fp rate: 0.00325673%
+total false positives: 529 out of 28341276, fp rate: 0.00186654%
+total false positives: 257 out of 28341276, fp rate: 0.000906805%
+total false positives: 140 out of 28341276, fp rate: 0.000493979%
+total false positives: 82 out of 28341276, fp rate: 0.000289331%
+total false positives: 44 out of 28341276, fp rate: 0.000155251%
+total false positives: 25 out of 28341276, fp rate: 8.82106e-05%
+total false positives: 10 out of 28341276, fp rate: 3.52842e-05%
+total false positives: 4 out of 28341276, fp rate: 1.41137e-05%
+total false positives: 1 out of 28341276, fp rate: 3.52842e-06%
+total false positives: 2 out of 28341276, fp rate: 7.05685e-06%
+total false positives: 0 out of 28341276, fp rate: 0%
+VacuumHashtable Status:
+                Slot per bucket: 4
+                Bucket count: 73728
+                Capacity: 294912
+
+                Keys stored: 262328
+                Load factor: 0.889513
+Bucket Seed Info:
+rehashing seed map:
+(key : value) = # rehashes : # buckets
+{0, 38269}
+{1, 17677}
+{2, 8823}
+{3, 4378}
+{4, 2180}
+{5, 1175}
+{6, 569}
+{7, 289}
+{8, 171}
+{9, 96}
+{10, 44}
+{11, 24}
+{12, 16}
+{13, 10}
+{14, 4}
+{15, 2}
+{17, 1}
+total buckets: 73728
+lookup rounds: 18
+good
+num_buckets = 73728
+alt range setting : 8192, 128, 32, 32, 
+Filter: finish inserting 262328 items
+
+Checking VF false negatives...
+Now checking VF false positives...
+complete!
+VacuumHashtable Status:
+                Slot per bucket: 4
+                Bucket count: 73728
+                Capacity: 294912
+
+                Keys stored: 262328
+                Load factor: 0.889513
+VacuumFilter Status:
+                SingleHashtable with tag size: 12 bits 
+                Associativity: 4
+                Total # of rows: 73728
+                Total # slots: 294912
+
+                Keys stored: 262328
+                Load factor: 0.889513
+                Hashtable size: 442368 (table) + 294936 (seeds) = 737304 bytes (432 KB)
+                bit/key:   13.4905
+
+root@DELL:/mnt/c/Users/LANLU/Desktop/dev/Research Lab stuff/Filters Project/filters-project/vacuumpair# ./test_pair
+24 1
+24 4
+root@DELL:/mnt/c/Users/LANLU/Desktop/dev/Research Lab stuff/Filters Project/filters-project/vacuumpair# ./test_pair
+buckets = 73728
+alt range setting : 8192, 128, 32, 32, 
+returning buckets: 73728
+Hashtable: finish inserting 262328 items
+total false positives: 49411 out of 28341276, fp rate: 0.174343%
+total false positives: 24928 out of 28341276, fp rate: 0.0879565%
+total false positives: 12620 out of 28341276, fp rate: 0.0445287%
+total false positives: 6440 out of 28341276, fp rate: 0.022723%
+total false positives: 3397 out of 28341276, fp rate: 0.0119861%
+total false positives: 1747 out of 28341276, fp rate: 0.00616415%
+total false positives: 923 out of 28341276, fp rate: 0.00325673%
+total false positives: 529 out of 28341276, fp rate: 0.00186654%
+total false positives: 257 out of 28341276, fp rate: 0.000906805%
+total false positives: 140 out of 28341276, fp rate: 0.000493979%
+total false positives: 82 out of 28341276, fp rate: 0.000289331%
+total false positives: 44 out of 28341276, fp rate: 0.000155251%
+total false positives: 25 out of 28341276, fp rate: 8.82106e-05%
+total false positives: 10 out of 28341276, fp rate: 3.52842e-05%
+total false positives: 4 out of 28341276, fp rate: 1.41137e-05%
+total false positives: 1 out of 28341276, fp rate: 3.52842e-06%
+total false positives: 2 out of 28341276, fp rate: 7.05685e-06%
+total false positives: 0 out of 28341276, fp rate: 0%
+VacuumHashtable Status:
+                Slot per bucket: 4
+                Bucket count: 73728
+                Capacity: 294912
+
+                Keys stored: 262328
+                Load factor: 0.889513
+Bucket Seed Info:
+rehashing seed map:
+(key : value) = # rehashes : # buckets
+{0, 38269}
+{1, 17677}
+{2, 8823}
+{3, 4378}
+{4, 2180}
+{5, 1175}
+{6, 569}
+{7, 289}
+{8, 171}
+{9, 96}
+{10, 44}
+{11, 24}
+{12, 16}
+{13, 10}
+{14, 4}
+{15, 2}
+{17, 1}
+total buckets: 73728
+lookup rounds: 18
+good
+num_buckets = 73728
+alt range setting : 8192, 128, 32, 32, 
+Filter: finish inserting 262328 items
+
+Checking VF false negatives...
+Now checking VF false positives...
+complete!
+VacuumHashtable Status:
+                Slot per bucket: 4
+                Bucket count: 73728
+                Capacity: 294912
+
+                Keys stored: 262328
+                Load factor: 0.889513
+VacuumFilter Status:
+                SingleHashtable with tag size: 12 bits 
+                Associativity: 4
+                Total # of rows: 73728
+                Total # slots: 294912
+
+                Keys stored: 262328
+                Load factor: 0.889513
+                Hashtable size: 442368 (table) + 73752 (seeds) = 516120 bytes (432 KB)
+                bit/key:   13.4905
+
+True bit/key (incorporating seeds):
+516120 * 8 / 262328 = 15.739684669573968

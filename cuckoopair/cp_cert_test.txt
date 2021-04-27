@@ -1,0 +1,32 @@
+Hashtable: finish inserting 262328 items
+total false positives: 27867 out of 28341276, fp rate: 0.0983266%
+total false positives: 6986 out of 28341276, fp rate: 0.0246496%
+total false positives: 1975 out of 28341276, fp rate: 0.00696863%
+total false positives: 610 out of 28341276, fp rate: 0.00215234%
+total false positives: 200 out of 28341276, fp rate: 0.000705685%
+total false positives: 67 out of 28341276, fp rate: 0.000236404%
+total false positives: 28 out of 28341276, fp rate: 9.87958e-05%
+total false positives: 6 out of 28341276, fp rate: 2.11705e-05%
+total false positives: 4 out of 28341276, fp rate: 1.41137e-05%
+total false positives: 0 out of 28341276, fp rate: 0%
+Filter: finish inserting 262328 items
+
+Checking CF false negatives:
+complete!
+CuckooHashtable Status:
+                Slot per bucket: 4
+                Bucket count: 131072
+                Capacity: 524288
+
+                Keys stored: 262328
+                Load factor: 0.500351
+CuckooFilter Status:
+                SingleHashtable with tag size: 12 bits 
+                Associativity: 4
+                Total # of rows (buckets): 131072
+                Total # slots: 524288
+
+                Keys stored: 262328
+                Load factor: 0.500351
+                Hashtable size: 786432 (table) + 131096 (seeds) = 917528 bytes (768 KB)
+                bit/key:   23.9832

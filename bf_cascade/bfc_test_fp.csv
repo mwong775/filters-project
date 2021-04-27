@@ -40,3 +40,6 @@ bf lookup time
 3.400445
 
 total cascade size (bytes): 563632
+
+bit/key: 563632 * 8 / 262328
+ = 17.188618828337045

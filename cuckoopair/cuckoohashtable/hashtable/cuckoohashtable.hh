@@ -25,8 +25,6 @@
 
 #include "bucketcontainer.hh"
 
-// #include "../city_hasher.hh"
-
 namespace cuckoohashtable
 {
 

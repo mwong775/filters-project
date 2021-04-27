@@ -8,4 +8,11 @@
 *.lo
 *.o
 *.so
-*.txt
+
+*.out
+
+final_revoked_unique.txt
+final_unrevoked_unique.txt
+
+revoked_sorted.txt
+unrevoked_sorted.txt

@@ -51,7 +51,7 @@ class CuckooFilter {
 
   std::vector<uint8_t> seeds_;
 
-  template <typename K>
+  template <typename K> // don't think this is being used, nor needed
   inline uint64_t Hash(const K &key, uint32_t seed = 0) const {
     return hasher_(key, seed);
   }
@@ -254,9 +254,9 @@ Status CuckooFilter<ItemType, bits_per_item, HashFamily, TableType>::Contain(
   // found = victim_.used && (tag1 == victim_.tag || tag2 == victim_.tag) &&
   //         (i1 == victim_.index || i2 == victim_.index);
 
-  if (table_->FindTagInBuckets(i1, i2, tag1, tag2)) {  // found ||
+  if (table_->FindTagInBuckets(i1, i2, tag1, tag2)) // found ||
     return Ok;
-  } else { // WARNING: only use for checking false negative's (if not, get spammed D:)
+  else // WARNING: only use for checking false negative's (if not, get spammed D:)
    
     // std::cout << "failed to find " << key << " at " << i1 // << ", " << i2
     //           << "\n\t\thv: " << Hash(key, seeds_.at(i1)) << " " // << " (" << hasher_(key, seeds_.at(i1)) << ") "
@@ -271,7 +271,6 @@ Status CuckooFilter<ItemType, bits_per_item, HashFamily, TableType>::Contain(
     // table_->PrintBucket(i2);
     // std::cout << "\tseed: " << seeds_.at(i2) << "\n";
     return NotFound;
-  }
    // std::cout << "HV's : [";
     // for (size_t j = 0; j < 4; j++) {
     //   if (table_->ReadTag(i1, j) != 0)

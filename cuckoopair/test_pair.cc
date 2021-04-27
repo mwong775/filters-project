@@ -16,12 +16,12 @@ template <typename KeyType>
 void read_cert(int f, vector<KeyType> &r, vector<KeyType> &s, FILE *file)
 {
     string line;
-    string revoked_filename = "final_revoked_unique.txt";
-    string unrevoked_filename = "final_unrevoked_unique.txt";
+    string revoked_filename = "../final_revoked_unique.txt";
+    string unrevoked_filename = "../final_unrevoked_unique.txt";
     if (f == 0)
     {
-        revoked_filename = "revoked_sorted.txt"; // WARNING: unusable - NOT mutually exclusive sets/contains some shared hashes :(
-        unrevoked_filename = "unrevoked_sorted.txt";
+        revoked_filename = "../revoked_sorted.txt"; // WARNING: unusable - NOT mutually exclusive sets/contains some shared hashes :(
+        unrevoked_filename = "../unrevoked_sorted.txt";
     }
     ifstream revoked(revoked_filename);     // 500 , final_revoked.txt 27496
     ifstream unrevoked(unrevoked_filename); // 50000 , final_unrevoked.txt 29725064
