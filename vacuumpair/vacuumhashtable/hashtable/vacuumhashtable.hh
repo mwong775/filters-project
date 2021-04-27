@@ -343,7 +343,7 @@ namespace vacuumhashtable
                     // if (pos1.index != b.i1)
                     //     return -1;
 
-                    int &seed = seeds_.at(pos1.index);
+                    uint8_t &seed = seeds_.at(pos1.index);
                     if (seed < num_lookup_rds_)
                     {
                         seed++;
@@ -365,7 +365,7 @@ namespace vacuumhashtable
                 if (pos2.status == ok)
                 {
                     assert(pos2.index == b.i2);
-                    int &seed = seeds_.at(pos2.index);
+                    uint8_t &seed = seeds_.at(pos2.index);
                     if (seed < num_lookup_rds_)
                     {
                         seed++;
@@ -414,7 +414,7 @@ namespace vacuumhashtable
             return seeds_.at(i);
         }
 
-        std::vector<int> get_seeds() const
+        std::vector<uint8_t> get_seeds() const
         { // std::vector<int> &seeds
             return seeds_;
             // seeds.resize(seeds_.size());
@@ -1180,7 +1180,7 @@ namespace vacuumhashtable
         // necessary.
         mutable buckets_t buckets_;
 
-        std::vector<int> seeds_;
+        std::vector<uint8_t> seeds_;
         mutable size_t num_lookup_rds_;
 
         // vacuum

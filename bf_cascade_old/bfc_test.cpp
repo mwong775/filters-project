@@ -2,7 +2,7 @@
 #include <random>
 #include <unistd.h>
 #include "hashutil.h"
-#include "bf_cascade.h"
+#include "bfcascade.h"
 #include <time.h>
 #include <string>
 using std::string;
@@ -24,18 +24,18 @@ void test_bfc(vector<uint64_t> r, vector<uint64_t> s, vector<uint64_t> fp, FILE 
     fprintf(file, "Bloom Filter Cascade\n");
     fprintf(file, "level, insert, lookup, # fp's, fp, memory(bytes), bits per item\n");
     cout << "start bfc insert" << endl;
-    auto start = chrono::steady_clock::now();  
+    // auto start = chrono::steady_clock::now();  
     bfc.insert(r, s, fp, file);
-    auto end = chrono::steady_clock::now();
+    // auto end = chrono::steady_clock::now();
     cout << "finish bfc insert" << endl;
-    double cost = time_cost(start, end);
-    cout << "bfc insert time: " << cost << endl;
-    fprintf(file, "bfc insert time\n");
-    fprintf(file, "%f\n", cost);
+    // double cost = time_cost(start, end);
+    // cout << "bfc insert time: " << cost << endl;
+    // fprintf(file, "bfc insert time\n");
+    // fprintf(file, "%f\n", cost);
     // cout << boolalpha; // converts bool print from 0/1 to t/f
     
     cout << "start bfc lookup" << endl;  
-    start = chrono::steady_clock::now();  
+    // start = chrono::steady_clock::now();  
     // returned true if REVOKED, false unrevoked
     int i = 0;
     int e1 = 0;
@@ -52,21 +52,21 @@ void test_bfc(vector<uint64_t> r, vector<uint64_t> s, vector<uint64_t> fp, FILE 
     cout << "false neg's..? " << e1 << endl;
     int j = 0;
     int e2 = 0;
-    for(auto d : s) {
-        if(bfc.lookup(d)) {
-            cout << "BFC ERROR ON UNREVOKED " << d << " index " << j << endl; // should not print
-            e2++;
-           // break;
-        }
-        j++;
-    }
-    end = chrono::steady_clock::now();
+    // for(auto d : s) {
+    //     if(bfc.lookup(d)) {
+    //         cout << "BFC ERROR ON UNREVOKED " << d << " index " << j << endl; // should not print
+    //         e2++;
+    //        // break;
+    //     }
+    //     j++;
+    // }
+    // end = chrono::steady_clock::now();
     cout << "finish bfc unrevoked lookup " << j << endl;
     cout << "false pos: " << e2 << endl;
-    cost = time_cost(start, end);
-    cout << "bfc lookup time: " << cost << endl;
-    fprintf(file, "bf lookup time\n");
-    fprintf(file, "%f\n", cost);
+    // cost = time_cost(start, end);
+    // cout << "bfc lookup time: " << cost << endl;
+    // fprintf(file, "bf lookup time\n");
+    // fprintf(file, "%f\n", cost);
     // cout << bfc.lookup(s.at(0)) << '\n'; // unrevoked (lvl 1)
     // cout << bfc.lookup(r.at(0)) << '\n'; // revoked (lvl 2)
     // cout << bfc.lookup(s.at(43279)) << '\n'; // fp, unrevoked (lvl 2)
@@ -75,8 +75,8 @@ void test_bfc(vector<uint64_t> r, vector<uint64_t> s, vector<uint64_t> fp, FILE 
 
 void read_cert(int f) {
     string line;
-    string revoked_filename = "../final_revoked_unique.txt";
-    string unrevoked_filename = "../final_unrevoked_unique.txt";
+    string revoked_filename = "final_revoked_unique.txt";
+    string unrevoked_filename = "final_unrevoked_unique.txt";
     if(f == 0) {
         revoked_filename = "../revoked_sorted.txt";
         unrevoked_filename = "../unrevoked_sorted.txt";

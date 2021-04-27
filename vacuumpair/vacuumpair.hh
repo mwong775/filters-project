@@ -36,8 +36,6 @@ public:
 
         zero_fp_rehash(r, s);
 
-        // table_->printAllBuckets();
-
         vector<vector<KeyType>> fp_table;
         table_->export_table(fp_table);
 

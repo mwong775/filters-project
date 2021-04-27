@@ -4,15 +4,16 @@
 #include <cstdio>
 #include <cstdint>
 #include <cstring>
-// #include "BloomFilter.h"
+
 #include "cuckoo.h"
 
 using namespace std;
 
+template <typename fp_type, size_t fp_len>
 class BFCascade {
 	public :
 
-    vector<BloomFilter<uint16_t, 15>> bfc;
+    vector<BloomFilter<fp_type, fp_len>> bfc;
     ~BFCascade() {}
 
 	void insert(vector<uint64_t> ins, vector<uint64_t> lup, vector<uint64_t> fp, FILE *file) {
@@ -71,7 +72,7 @@ class BFCascade {
 		// cout << "lookup: " << e << endl;
 		// cout << "lvls: " << bfc.size() << endl;
 	    int l = 1; // track level
-		for (BloomFilter<uint16_t, 15> bf: bfc) {
+		for (BloomFilter<fp_type, fp_len> bf: bfc) {
 	        // cout << "level " << l << ": ";
 			// cout << "size " << it.size() << endl;
 	        if(!bf.lookup(e)) {
@@ -102,7 +103,7 @@ class BFCascade {
 	    cout << "\nprinting cascade stats...\n# of levels (bf's): " << bfc.size() << endl;
 	    int i = 1;
 		int total_size = 0;
-		for (BloomFilter<uint16_t, 15> bf: bfc) {
+		for (BloomFilter<fp_type, fp_len> bf: bfc) {
 			total_size += bf.mem_cost();
 	        cout << "\nlevel " << i << ": " << endl;
 			// cout << "data? " << *(bf.table()) << endl;

@@ -117,7 +117,7 @@ namespace cuckoofilter
 
     HashFamily hasher_;
 
-    std::vector<int> seeds_;
+    std::vector<uint8_t> seeds_;
 
     int big_seg;
     int len[AR];
@@ -248,7 +248,7 @@ namespace cuckoofilter
     }
     
     // modified constructor
-    explicit VacuumFilter(const size_t max_num_keys, const std::vector<int> &seeds = std::vector<uint8_t>(), bool aligned = false, bool _packed = false) : num_items_(0), victim_(), hasher_()
+    explicit VacuumFilter(const size_t max_num_keys, const std::vector<uint8_t> &seeds = std::vector<uint8_t>(), bool aligned = false, bool _packed = false) : num_items_(0), victim_(), hasher_()
     {
 
       std::cout << "good" << std::endl;
@@ -706,7 +706,8 @@ Status VacuumFilter<ItemType, bits_per_item, HashFamily, TableType>::CopyInsert(
   template <typename ItemType, size_t bits_per_item, typename HashFamily,
           template <size_t> class TableType>
 size_t VacuumFilter<ItemType, bits_per_item, HashFamily, TableType>::SeedTable_Size() const {
-  return sizeof(std::vector<int>) + (sizeof(int) * seeds_.size());
+  return sizeof(std::vector<uint8_t>) + (sizeof(uint8_t) * seeds_.size());
+  // sizeof(vector) = 24, sizeof(uint8_t) = 1, sizeof(int) = 4
 }
 
   template <typename ItemType, size_t bits_per_item, typename HashFamily,
