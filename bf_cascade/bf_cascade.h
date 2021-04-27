@@ -16,19 +16,21 @@ class BFCascade {
     vector<BloomFilter<fp_type, fp_len>> bfc;
     ~BFCascade() {}
 
-	void insert(vector<uint64_t> ins, vector<uint64_t> lup, vector<uint64_t> fp, FILE *file) {
+	void insert(vector<uint64_t> ins, vector<uint64_t> lup, vector<uint64_t> fp) { // , FILE *file)
 		// max load factor of 95%
         double max_lf = 0.95;
         uint64_t init_size = ins.size() / max_lf;
         
         BloomFilter<uint16_t, 15> bloomFilter;
         bloomFilter.init(init_size, 1);
+		/*
 		if(bfc.size() & 1) { // odd = revoked
 			cout << "bf contains REVOKED: level " << bfc.size() << endl;
 		} 
 		else { // even = unrevoked
 			cout << "bf contains UNREVOKED: level " << bfc.size() << endl;
 		}
+		*/
 
 	    for(uint64_t c : ins) { // int i = 0; i < int(ins.size()); i++
 	        // uint64_t c = ins.at(i);
@@ -52,17 +54,17 @@ class BFCascade {
 		// cout << "# false hits: " << fp.size() << '\n';
 		// cout << "fp: " << fpratio << '\n';
 		// fprintf(file, "level, insert, lookup, # fp's, fp, memory(bytes), bits per item\n");
-		fprintf(file, "%lu, %lu, %lu, %lu, %.5f, %lu, %.5f\n", bfc.size(), ins.size(), lup.size(), fp.size(), fpratio, bloomFilter.mem_cost(), double(bloomFilter.mem_cost())/ins.size());
-		cout << "# fp's " << fp.size() << " fp " << fpratio << endl;
+		// fprintf(file, "%lu, %lu, %lu, %lu, %.5f, %lu, %.5f\n", bfc.size(), ins.size(), lup.size(), fp.size(), fpratio, bloomFilter.mem_cost(), double(bloomFilter.mem_cost())/ins.size());
+		// cout << "# fp's " << fp.size() << " fp " << fpratio << endl;
 
 		if(fpratio == 1) {
 			cout << "ERROR: fp = " << fpratio << endl;
 			return;
 		}
 
-	    if(fp.size() > 0) {
+	    if(fp.size() > 0) { // RECURSION
 			lup.clear();
-	        insert(fp, ins, lup, file);
+	        insert(fp, ins, lup); 
 	    }
 		// cout << "final # levels: " << bfc.size() << endl;
 		// cout << "insert " << ins.size() << " lookup " << lup.size() << " fp " << fp.size() << endl;

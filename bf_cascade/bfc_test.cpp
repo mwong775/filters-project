@@ -25,7 +25,7 @@ void test_bfc(vector<uint64_t> r, vector<uint64_t> s, vector<uint64_t> fp, FILE 
     fprintf(file, "level, insert, lookup, # fp's, fp, memory(bytes), bits per item\n");
     cout << "start bfc insert" << endl;
     auto start = chrono::steady_clock::now();  
-    bfc.insert(r, s, fp, file);
+    bfc.insert(r, s, fp); // , file
     auto end = chrono::steady_clock::now();
     cout << "finish bfc insert" << endl;
     double cost = time_cost(start, end);

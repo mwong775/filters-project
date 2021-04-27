@@ -119,7 +119,7 @@ class BloomFilter //: public Filter<fp_t, fp_len>
         n = (uint64_t)_n * _m * _fp_len; // regard n * m as number of keys
         memory_consumption = ROUNDUP((long long)n + 64, 8) / 8; // how many bytes
         // cout << "k HASHES = " << k << endl;
-        cout << "INIT mem: " << memory_consumption << " n: " << n << " fp_len: " << _fp_len << endl;
+        // cout << "INIT mem: " << memory_consumption << " n: " << n << " fp_len: " << _fp_len << endl;
         T = (char *)calloc(memory_consumption, sizeof(char)); // how many bytes
     }
     void clear()
