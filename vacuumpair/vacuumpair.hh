@@ -26,7 +26,6 @@ public:
     vacuumhashtable::vacuum_hashtable<KeyType, bits_per_fp, Hash> *table_; // , CityHasher<KeyType>
     cuckoofilter::VacuumFilter<KeyType, bits_per_fp, Hash> *filter_;
 
-public:
     explicit vacuumpair(vector<KeyType> r, vector<KeyType> s) : num_items_(r.size())
     {
         size_ = r.size() / 0.95;
@@ -57,6 +56,7 @@ public:
     //     delete table_;
     //     delete filter_;
     // }
+private:
 
     template <typename K>
     void insert_hashtable(vector<K> &r)
@@ -165,6 +165,12 @@ public:
         }
         assert(false_queries == 0);
         // assert(total_queries == filter_->Size() * 100);
+    }
+
+public:
+    template <typename K>
+    bool lookup(K key) {
+        return filter_->Contain(key) == cuckoofilter::Ok;
     }
 
     cuckoofilter::VacuumFilter<KeyType, bits_per_fp, Hash> get_filter()

@@ -1,4 +1,14 @@
-throughput, item numbers = 262328, query number = 28341276
-17.68127, 
-throughput, item numbers = 262328, query number = 28341276
-17.64760, 
+valid throughput, revoked throughput, mixed throughput, item numbers = 262328, query number = 28341276
+17.53915, 0.15763, 8.61640
+17.49595, 0.15723, 8.57896
+17.70106, 0.15905, 8.64763
+17.64010, 0.15853, 8.62191
+17.68541, 0.15890, 8.65122
+
+valid throughput, revoked throughput, mixed throughput, item numbers = 262328, query number = 28341276
+17.71707, 0.15917, 8.69402
+17.73898, 0.15939, 8.68550
+17.45852, 0.15697, 8.60825
+17.68681, 0.15891, 8.65657
+17.76716, 0.15960, 8.69572
+

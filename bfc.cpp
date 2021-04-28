@@ -129,7 +129,7 @@ void test_lookup(int n = 0, int q = 0, int rept = 1)
 
     vector<uint64_t> insKey; // revoked
     vector<uint64_t> lupKey; // unrevoked
-    vector<uint64_t> fp; // track false positives
+    vector<uint64_t> fp;     // track false positives
 
     read_cert(insKey, lupKey);
 
@@ -141,14 +141,16 @@ void test_lookup(int n = 0, int q = 0, int rept = 1)
     // q = 10000000;
     // double neg_frac = 0.5; // what is this
 
-    double mop[6], mop1[6];
-    int cnt[6], cnt1[6];
+    double mop[6], mop1[6], mop2[6];
+    int cnt[6], cnt1[6], cnt2[6];
     // double mop[6][20], mop1[6][20];
     // int cnt[6][20], cnt1[6][20];
     memcle(mop);
     memcle(cnt);
     memcle(mop1);
     memcle(cnt1);
+    memcle(mop2);
+    memcle(cnt2);
 
     // max load factor of 95%
     // double max_lf = 0.95;
@@ -168,44 +170,76 @@ void test_lookup(int n = 0, int q = 0, int rept = 1)
         // insertions take both insert and lookup sets as input
         // to generate more cascade levels upon finding false positive's
         bfc.insert(insKey, lupKey, fp);
-            // for (; i < lim; i++)
-            //     if (bfc.insert(insKey[i]) == true) {
-            //         ++ins_cnt;
-            //     }
+        // for (; i < lim; i++)
+        //     if (bfc.insert(insKey[i]) == true) {
+        //         ++ins_cnt;
+        //     }
         printf("insert done\n");
         auto start = chrono::steady_clock::now();
 
         int lookup_number = 0;
         // int p = min(q, lim);
-        int k = 0;
-
-        for (k = 0; k < q; k++) // neg_frac = 0.5
+        // int k = 0;
+        // START lookup set "s" / valid certs
+        for (int k = 0; k < q; k++) // neg_frac = 0.5
             if (bfc.lookup(lupKey[k]) == false)
             {
                 lookup_number++;
                 // printf("neg lookup: %d false/miss\n", lookup_number);
             }
-        
+
         auto end = chrono::steady_clock::now();
         double cost = time_cost(start, end);
 
-        mop[0] += double(q) / 1000000.0 / cost;
-        cnt[0] += 1;
+        mop[t] += double(q) / 1000000.0 / cost;
+        cnt[t] += 1;
         printf("time: %.5f\n", double(q) / 1000000.0 / cost);
-        printf("pos lookup count: %d\n", lookup_number); // double of the limit
+        printf("valid lookup count: %d\n", lookup_number); // double of the limit
+
+        // START lookup set "r" / revoked certs
+        lookup_number = 0;
+        for (int i = 0; i < n; i++)
+            if (bfc.lookup(insKey[i]) == true)
+                lookup_number++;
+
+        end = chrono::steady_clock::now();
+        cost = time_cost(start, end);
+
+        mop1[t] += double(n) / 1000000.0 / cost;
+        cnt1[t] += 1;
+        printf("time: %.5f\n", double(n) / 1000000.0 / cost);
+        printf("revoked lookup count: %d\n", lookup_number);
+
+        // START lookup mixed sets "r" + "s" / revoked + valid certs
+        lookup_number = 0;
+        // set S
+        for (int k = 0; k < q; k++) // neg_frac = 0.5
+            if (bfc.lookup(lupKey[k]) == false)
+                lookup_number++;
+        // set R
+        for (int i = 0; i < n; i++)
+            if (bfc.lookup(insKey[i]) == true)
+                lookup_number++;
+
+        end = chrono::steady_clock::now();
+        cost = time_cost(start, end);
+    
+        mop2[t] += double(n + q) / 1000000.0 / cost;
+        cnt2[t] += 1;
+        printf("time: %.5f\n", double(n + q) / 1000000.0 / cost);
+        printf("total mixed lookup count: %d\n", lookup_number);
 
     }
-    fprintf(out, "throughput, item numbers = %d, query number = %d\n", n, q);
+    fprintf(out, "valid throughput, revoked throughput, mixed throughput, item numbers = %d, query number = %d\n", n, q);
     // fprintf(out, "occupancy, bloom neg, bloom pos, negative fraction = %.2f, item numbers = %d, query number = %d\n", neg_frac, n, q);
 
-    for (int k = 0; k < 1; k++)
-        fprintf(out, "%.5f, ", mop[k] / cnt[k]); // time over count?
+    for (int k = 0; k < rept; k++)
+        fprintf(out, "%.5f, %.5f, %.5f\n", mop[k] / cnt[k], mop1[k] / cnt1[k], mop2[k] / cnt2[k]); // time over count?
     fprintf(out, "\n");
 }
 
 int main(int argc, char *argv[])
 {
-    // 0 = short dataset, else full dataset
     int rept = 5;
     test_lookup(0, 0, rept);
 
