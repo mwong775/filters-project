@@ -91,18 +91,19 @@ void test_lookup(int n = 0, int q = 0, int rept = 1)
     // double max_lf = 0.95;
     // uint64_t init_size = insKey.size() / max_lf;
 
-    printf("bloom filter cascade lookup\n");
+    printf("vacuum pair lookup\n");
     for (int t = 0; t < rept; t++)
     {
 
         // insertions take both insert and lookup sets as input
         // to generate more cascade levels upon finding false positive's
-        vacuumpair<uint64_t> pair(insKey, lupKey);
+        vacuumpair<uint64_t> vp(insKey, lupKey);
 
 
         // int i = 0;
         // int ins_cnt = 0;
         // int j = 0;
+        vp.info();
         printf("insert done\n");
         auto start = chrono::steady_clock::now();
 
@@ -111,7 +112,7 @@ void test_lookup(int n = 0, int q = 0, int rept = 1)
         // int k = 0;
         // START lookup set "s" / valid certs
         for (int k = 0; k < q; k++) // neg_frac = 0.5
-            if (pair.lookup(lupKey[k]) == false)
+            if (vp.lookup(lupKey[k]) == false)
             {
                 lookup_number++;
                 // printf("neg lookup: %d false/miss\n", lookup_number);
@@ -126,9 +127,10 @@ void test_lookup(int n = 0, int q = 0, int rept = 1)
         printf("valid lookup count: %d\n", lookup_number); // double of the limit
 
         // START lookup set "r" / revoked certs
+        start = chrono::steady_clock::now();
         lookup_number = 0;
         for (int i = 0; i < n; i++)
-            if (pair.lookup(insKey[i]) == true)
+            if (vp.lookup(insKey[i]) == true)
                 lookup_number++;
 
         end = chrono::steady_clock::now();
@@ -140,14 +142,15 @@ void test_lookup(int n = 0, int q = 0, int rept = 1)
         printf("revoked lookup count: %d\n", lookup_number);
 
         // START lookup mixed sets "r" + "s" / revoked + valid certs
+        start = chrono::steady_clock::now();
         lookup_number = 0;
         // set S
         for (int k = 0; k < q; k++) // neg_frac = 0.5
-            if (pair.lookup(lupKey[k]) == false)
+            if (vp.lookup(lupKey[k]) == false)
                 lookup_number++;
         // set R
         for (int i = 0; i < n; i++)
-            if (pair.lookup(insKey[i]) == true)
+            if (vp.lookup(insKey[i]) == true)
                 lookup_number++;
 
         end = chrono::steady_clock::now();
@@ -164,6 +167,7 @@ void test_lookup(int n = 0, int q = 0, int rept = 1)
     for (int k = 0; k < rept; k++)
         fprintf(out, "%.5f, %.5f, %.5f\n", mop[k] / cnt[k], mop1[k] / cnt1[k], mop2[k] / cnt2[k]); // time over count?
     fprintf(out, "\n");
+
 }
 
 int main(int argc, char **argv)

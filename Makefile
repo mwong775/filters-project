@@ -12,7 +12,8 @@ bfc : bfc.cpp bf_cascade/bf_cascade.h
 cp : cp.cc cuckoopair.hh
 	g++ $(CFLAGS) -Ofast -o cp cp.cc  
 
-vp : vp.cc vacuumpair.hh
+# ERROR: "vacuumpair/vacuumhashtable/city.cc:498:10: fatal error: citycrc.h: No such file or directory"
+vp : vp.cc vacuumpair/vacuumpair.hh
 	g++ $(CFLAGS) -Ofast -o vp vp.cc  
 
 clean:

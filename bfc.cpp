@@ -197,6 +197,7 @@ void test_lookup(int n = 0, int q = 0, int rept = 1)
         printf("valid lookup count: %d\n", lookup_number); // double of the limit
 
         // START lookup set "r" / revoked certs
+        start = chrono::steady_clock::now();
         lookup_number = 0;
         for (int i = 0; i < n; i++)
             if (bfc.lookup(insKey[i]) == true)
@@ -211,6 +212,7 @@ void test_lookup(int n = 0, int q = 0, int rept = 1)
         printf("revoked lookup count: %d\n", lookup_number);
 
         // START lookup mixed sets "r" + "s" / revoked + valid certs
+        start = chrono::steady_clock::now();
         lookup_number = 0;
         // set S
         for (int k = 0; k < q; k++) // neg_frac = 0.5

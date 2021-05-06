@@ -158,3 +158,6 @@ VacuumFilter Status:
 
 True bit/key (incorporating seeds):
 516120 * 8 / 262328 = 15.739684669573968
+
+total bucket rehashes: 71850
+avg rehash per bucket: 71850 / 73728 = 0.9745279947916666

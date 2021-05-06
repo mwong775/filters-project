@@ -290,7 +290,7 @@ namespace cuckoofilter
           num_buckets = ROUNDUP(int(max_num_keys / assoc), len[0] + 1);
       }
 
-      assert(seeds_.size() == num_buckets); // double-check calculations match
+      // assert(seeds_.size() == num_buckets); // double-check calculations match
 
       victim_.used = false;
 
@@ -543,7 +543,7 @@ Status VacuumFilter<ItemType, bits_per_item, HashFamily, TableType>::CopyInsert(
    uint32_t tag1, tag2;
 
     GenerateTagHashes(key, &i1, &i2, &tag1, &tag2);
-    assert(i1 == AltIndex(i2, key));
+    // assert(i1 == AltIndex(i2, key));
 
     // std::cout << "lup " << tag1 << ", " << tag2 << ": " << i1 << ", " << i2
     //           << "\n";

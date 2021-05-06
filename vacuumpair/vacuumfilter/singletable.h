@@ -132,7 +132,11 @@ class SingleTable {
 
   inline bool FindTagInBuckets(const size_t i1, const size_t i2,
                                const uint32_t tag1, const uint32_t tag2) const {
-    return FindTagInBucket(i1, tag1) || FindTagInBucket(i2, tag2);
+    if (FindTagInBucket(i1, tag1))
+        return true; 
+    if (FindTagInBucket(i2, tag2))
+        return true;
+    return false;
 
     // const char *p1 = buckets_[i1].bits_;
     // const char *p2 = buckets_[i2].bits_;
