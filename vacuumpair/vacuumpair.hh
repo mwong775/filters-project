@@ -13,23 +13,33 @@ using namespace std;
 idea: class for performing zeroing false positive algorithm, and returning cuckoo filter with seeds
 */
 
-template <typename KeyType, size_t bits_per_fp = 12, class Hash = CityHasher<KeyType>>
+template <typename KeyType, size_t bits_per_fp = 12, template <size_t> class TableType = cuckoofilter::SingleTable, class Hash = CityHasher<KeyType>>
 class vacuumpair
 {
 private:
-    size_t num_items_;
+    size_t max_num_items_;
     size_t size_;
 
-    std::vector<uint8_t> seeds_;
+    // std::vector<uint8_t> seeds_;
 
 public:
     vacuumhashtable::vacuum_hashtable<KeyType, bits_per_fp, Hash> *table_; // , CityHasher<KeyType>
-    cuckoofilter::VacuumFilter<KeyType, bits_per_fp, Hash> *filter_;
+    cuckoofilter::VacuumFilter<size_t, bits_per_fp, Hash, TableType> *filter_;
 
-    explicit vacuumpair(vector<KeyType> r, vector<KeyType> s) : num_items_(r.size())
+    explicit vacuumpair(size_t max_num_items) : max_num_items_(max_num_items)
     {
-        size_ = r.size() / 0.95;
+        size_ = max_num_items_ / 0.95;
         table_ = new vacuumhashtable::vacuum_hashtable<KeyType, bits_per_fp, Hash>(size_);
+    }
+
+    // ~vacuumpair()
+    // {
+    //     delete table_;
+    //     delete filter_;
+    // }
+
+    void init(vector<KeyType> r, vector<KeyType> s)
+    {
         insert_hashtable(r);
         // fn_lookup_hashtable(r);
 
@@ -38,26 +48,41 @@ public:
         vector<vector<KeyType>> fp_table;
         table_->export_table(fp_table);
 
-        table_->seedInfo();
+        cout << table_->seedInfo();
 
-        filter_ = new cuckoofilter::VacuumFilter<KeyType, bits_per_fp, Hash>(size_, table_->get_seeds());
+        filter_ = new cuckoofilter::VacuumFilter<size_t, bits_per_fp, Hash, TableType>(size_, table_->get_seeds());
 
         insert_filter(fp_table);
 
         check_lookup_filter(r, s);
 
         cout << "complete!\n";
-
-        info();
     }
 
-    // ~vacuumpair()
-    // {
-    //     delete table_;
-    //     delete filter_;
-    // }
-private:
+    size_t num_rehashes() const {
+        // max # of rehash rounds completed (aka lookup rounds - 1)
+        return table_->num_rehashes();
+    }
 
+    double avg_rehash() const {
+        return table_->averageRehash();
+    }
+
+    size_t table_size() const {
+        return filter_->SizeInBytes();
+    }
+
+    size_t seedtable_size() const {
+        return filter_->SeedTable_Size();
+    }
+
+    size_t bits_per_item() const {
+        return filter_->BitsPerItem();
+    }
+
+
+
+private:
     template <typename K>
     void insert_hashtable(vector<K> &r)
     {
@@ -116,12 +141,12 @@ private:
 
             // fprintf(file, "%lu, %lu, %.6f\n", table.num_rehashes() + 1, false_queries, fp);
 
-            if (false_queries > 0)
+            if (false_queries)
                 total_rehash += table_->rehash_buckets();
             else
                 break;
         }
-        // cout << table_->info();
+        cout << table_->info();
     }
 
     template <typename K>
@@ -143,9 +168,9 @@ private:
     void check_lookup_filter(vector<K> &r, vector<K> &s)
     {
         // check no false negatives - failing here with sizes above 10k :(
-        // cout << "\nChecking VF false negatives...\n";
-        // for (auto c : r)
-        //     assert(filter_->Contain(c) == cuckoofilter::Ok);
+        cout << "\nChecking VF false negatives...\n";
+        for (auto c : r)
+            assert(filter_->Contain(c) == cuckoofilter::Ok);
 
         size_t total_queries = 0;
         size_t false_queries = 0;
@@ -163,11 +188,12 @@ private:
 
 public:
     template <typename K>
-    bool lookup(K key) {
+    bool lookup(K key)
+    {
         return filter_->Contain(key) == cuckoofilter::Ok;
     }
 
-    cuckoofilter::VacuumFilter<KeyType, bits_per_fp, Hash> get_filter()
+    cuckoofilter::VacuumFilter<size_t, bits_per_fp, Hash> get_filter()
     {
         return *filter_;
     }
