@@ -23,63 +23,12 @@ double time_cost(chrono::steady_clock::time_point &start,
     return elapsedSeconds;
 }
 
-void test_bfc(vector<uint64_t> r, vector<uint64_t> s, vector<uint64_t> fp, FILE *file)
+// generate n 64-bit random numbers for running insert & lookup
+void random_gen(int n, vector<uint64_t> &store, mt19937 &rd)
 {
-    BFCascade<uint16_t, 15> bfc;
-    fprintf(file, "Bloom Filter Cascade\n");
-    fprintf(file, "level, insert, lookup, # fp's, fp, memory(bytes), bits per item\n");
-    cout << "start bfc insert" << endl;
-    auto start = chrono::steady_clock::now();
-    bfc.insert(r, s, fp);
-    auto end = chrono::steady_clock::now();
-    cout << "finish bfc insert" << endl;
-    double cost = time_cost(start, end);
-    cout << "bfc insert time: " << cost << endl;
-    fprintf(file, "bfc insert time\n");
-    fprintf(file, "%f\n", cost);
-    // cout << boolalpha; // converts bool print from 0/1 to t/f
-
-    cout << "start bfc lookup" << endl;
-    start = chrono::steady_clock::now();
-    // returned true if REVOKED, false unrevoked
-    int i = 0;
-    int e1 = 0;
-    for (auto c : r)
-    { // int i = 0; i < int(r.size()); i++
-        // uint64_t c = r.at(i);
-        if (!bfc.lookup(c))
-        {
-            cout << "bfc ERROR ON REVOKED " << c << " index " << i << endl; // should not print
-            e1++;
-            // break;
-        }
-        i++;
-    }
-    cout << "finish bfc revoked lookup " << i << endl;
-    cout << "false neg's..? " << e1 << endl;
-    int j = 0;
-    int e2 = 0;
-    for (auto d : s)
-    {
-        if (bfc.lookup(d))
-        {
-            cout << "bfc ERROR ON UNREVOKED " << d << " index " << j << endl; // should not print
-            e2++;
-            // break;
-        }
-        j++;
-    }
-    end = chrono::steady_clock::now();
-    cout << "finish bfc unrevoked lookup " << j << endl;
-    cout << "false pos: " << e2 << endl;
-    cost = time_cost(start, end);
-    cout << "bfc lookup time: " << cost << endl;
-    fprintf(file, "bfc lookup time\n");
-    fprintf(file, "%f\n", cost);
-    // cout << bfc.lookup(s.at(0)) << '\n'; // unrevoked (lvl 1)
-    // cout << bfc.lookup(r.at(0)) << '\n'; // revoked (lvl 2)
-    // cout << bfc.lookup(s.at(43279)) << '\n'; // fp, unrevoked (lvl 2)
-    bfc.print_cascade();
+    store.resize(n);
+    for (int i = 0; i < n; i++)
+        store[i] = (uint64_t(rd()) << 32) + rd();
 }
 
 void read_cert(vector<uint64_t> &r, vector<uint64_t> &s)
@@ -114,17 +63,119 @@ void read_cert(vector<uint64_t> &r, vector<uint64_t> &s)
     // cout << "# revoked: " << r.size() << " cap: " << r.capacity() << '\n';
     // cout << "# unrevoked: " << s.size() << " cap: " << s.capacity() << '\n';
     // cout << "# fp's: " << fp.size() << " cap: " << fp.capacity() << '\n';
-
-    // test_bfc(r, s, fp, file);
-
-    // fprintf(file, "\n");
-    // fclose(file);
 }
 
-void test_lookup(int n = 0, int q = 0, int rept = 1)
+void test_size_lookup(int n = 0, int q = 0, int rept = 1)
+{
+    FILE *out = fopen("bfc_size_lookup.csv", "a");
+    assert(out != NULL);
+
+    if (n == 0)
+        n = (1 << 27);
+    if (q == 0)
+        q = 10000000;
+    int seed = 1;
+
+    mt19937 rd(seed);
+    double mop[6][20], mop1[6][20], bits_per_item[6][20];
+    int cnt[6][20], cnt1[6][20], total_bytes[6][20];
+    uint8_t lvls[6][20];
+
+    memcle(mop);
+    memcle(cnt);
+    memcle(mop1);
+    memcle(cnt1);
+    memcle(lvls);
+    memcle(total_bytes);
+    memcle(bits_per_item);
+
+    printf("bfc size lookup\n");
+    for (int t = 0; t < rept; t++)
+    {
+        int i = 0;
+        int ins_cnt = 0;
+        int j = 0;
+
+        for (double r = 0.05; r <= 0.96; r += 0.05, j++)
+        {
+            printf("r = %.2f\n", r);
+            int lim = int(n * r);
+            vector<uint64_t> insKey;
+            int lookup_number = 0;
+            int p = min(q, lim) * 100;
+            int k = 0;
+            vector<uint64_t> lupKey;
+            vector<uint64_t> fp; // track false positives
+            random_gen(lim, insKey, rd);
+            random_gen(p, lupKey, rd);
+            // for (; i < lim; i++)
+            //     if (bfc.Add(insKey[i]) == cuckoofilter::Ok)
+            //         ++ins_cnt;
+
+            // insertions take both insert and lookup sets as input
+            // to generate more cascade levels upon finding false positive's
+            BFCascade<uint16_t, 15> bfc;
+
+            // insertions take both insert and lookup sets as input
+            // to generate more cascade levels upon finding false positive's
+            printf("level, insert, lookup, # fp's, fp, memory(bytes), bits per item\n"); // temp. method of formatting stdout since insert() is recursive
+            bfc.insert(insKey, lupKey, fp);
+
+            cout << "total cascade size (bytes): " << bfc.num_bytes() << "\n";
+            lvls[0][j] = bfc.num_levels();
+            total_bytes[0][j] = bfc.num_bytes();
+            bits_per_item[0][j] = bfc.bits_per_item();
+
+            auto start = chrono::steady_clock::now();
+
+            for (k = 0; k < p; k++)
+                if (!bfc.lookup(lupKey[k]))
+                    lookup_number++;
+
+            // for (; k < p; k++)
+            //     if (bfc.lookup(insKey[k]))
+            //         lookup_number++;
+
+            auto end = chrono::steady_clock::now();
+            double cost = time_cost(start, end);
+
+            mop[0][j] += double(p) / 1000000.0 / cost;
+            cnt[0][j] += 1;
+
+            start = chrono::steady_clock::now();
+
+            int t = min(q, lim);
+            for (int i = 0; i < t; i++)
+                if (bfc.lookup(insKey[i]) == true)
+                    lookup_number++;
+
+            end = chrono::steady_clock::now();
+            cost = time_cost(start, end);
+            mop1[0][j] += double(t) / 1000000.0 / cost;
+            cnt1[0][j] += 1;
+            printf("%.5f\n", double(t) / 1000000.0 / cost);
+
+            printf("lookup_number = %d\n", lookup_number);
+        }
+    }
+
+    fprintf(out, "num items, bfc neg, bfc pos, num lvls, total size, bits per item, item numbers = %d, query number = %d\n", n, q);
+
+    for (int j = 0; j < 19; j++)
+    {
+        fprintf(out, "%d, ", int((j + 1) * 0.05 * n));
+        for (int k = 0; k < 1; k++)
+            fprintf(out, "%.5f, %.5f, %d, %d, %.5f, ", mop[k][j] / cnt[k][j], mop1[k][j] / cnt1[k][j], lvls[k][j], total_bytes[k][j], bits_per_item[k][j]);
+        fprintf(out, "\n");
+    }
+
+    fclose(out);
+}
+
+void test_cert_lookup(int n = 0, int q = 0, int rept = 1)
 {
 
-    FILE *out = fopen("bfc_throughput_lookup.csv", "a");
+    FILE *out = fopen("bfc_cert_lookup.csv", "a");
     assert(out != NULL);
 
     vector<uint64_t> insKey; // revoked
@@ -156,7 +207,7 @@ void test_lookup(int n = 0, int q = 0, int rept = 1)
     // double max_lf = 0.95;
     // uint64_t init_size = insKey.size() / max_lf;
 
-    printf("bloom filter cascade lookup\n");
+    printf("bloom filter cascade cert lookup\n");
     for (int t = 0; t < rept; t++)
     {
         // BloomFilter<uint16_t, 15> bf;
@@ -169,11 +220,10 @@ void test_lookup(int n = 0, int q = 0, int rept = 1)
 
         // insertions take both insert and lookup sets as input
         // to generate more cascade levels upon finding false positive's
+        printf("level, insert, lookup, # fp's, fp, memory(bytes), bits per item\n"); // temp. method of formatting stdout since insert() is recursive
         bfc.insert(insKey, lupKey, fp);
-        // for (; i < lim; i++)
-        //     if (bfc.insert(insKey[i]) == true) {
-        //         ++ins_cnt;
-        //     }
+
+        cout << "total cascade size (bytes): " << bfc.num_bytes() << "\n";
         printf("insert done\n");
         auto start = chrono::steady_clock::now();
 
@@ -225,12 +275,11 @@ void test_lookup(int n = 0, int q = 0, int rept = 1)
 
         end = chrono::steady_clock::now();
         cost = time_cost(start, end);
-    
+
         mop2[t] += double(n + q) / 1000000.0 / cost;
         cnt2[t] += 1;
         printf("time: %.5f\n", double(n + q) / 1000000.0 / cost);
         printf("total mixed lookup count: %d\n", lookup_number);
-
     }
     fprintf(out, "valid throughput, revoked throughput, mixed throughput, item numbers = %d, query number = %d\n", n, q);
     // fprintf(out, "occupancy, bloom neg, bloom pos, negative fraction = %.2f, item numbers = %d, query number = %d\n", neg_frac, n, q);
@@ -243,7 +292,8 @@ void test_lookup(int n = 0, int q = 0, int rept = 1)
 int main(int argc, char *argv[])
 {
     int rept = 5;
-    test_lookup(0, 0, rept);
+    test_size_lookup(0, 0, rept);
+    // test_cert_lookup(0, 0, rept);
 
     return 0;
 }

@@ -14,12 +14,18 @@ class BFCascade {
 	public :
 
     vector<BloomFilter<fp_type, fp_len>> bfc;
+	uint64_t size_in_bytes = 0;
+	size_t num_items_;
+
     ~BFCascade() {}
 
 	void insert(vector<uint64_t> ins, vector<uint64_t> lup, vector<uint64_t> fp) { // , FILE *file)
 		// max load factor of 95%
         double max_lf = 0.95;
         uint64_t init_size = ins.size() / max_lf;
+
+		if (ins.size() > num_items_) // prevent overwriting during recursion
+			num_items_ = ins.size();
         
         BloomFilter<uint16_t, 15> bloomFilter;
         bloomFilter.init(init_size, 1);
@@ -51,9 +57,11 @@ class BFCascade {
 	        }
 	    }
 		double fpratio = (double) fp.size() / lup.size();
+		size_in_bytes += bloomFilter.mem_cost();
 		// cout << "# false hits: " << fp.size() << '\n';
 		// cout << "fp: " << fpratio << '\n';
 		// fprintf(file, "level, insert, lookup, # fp's, fp, memory(bytes), bits per item\n");
+		printf("%lu, %lu, %lu, %lu, %.5f, %lu, %.5f\n", bfc.size(), ins.size(), lup.size(), fp.size(), fpratio, bloomFilter.mem_cost(), double(bloomFilter.mem_cost())/ins.size());
 		// fprintf(file, "%lu, %lu, %lu, %lu, %.5f, %lu, %.5f\n", bfc.size(), ins.size(), lup.size(), fp.size(), fpratio, bloomFilter.mem_cost(), double(bloomFilter.mem_cost())/ins.size());
 		// cout << "# fp's " << fp.size() << " fp " << fpratio << endl;
 
@@ -77,9 +85,9 @@ class BFCascade {
 		for (BloomFilter<fp_type, fp_len> bf: bfc) {
 	        // cout << "level " << l << ": ";
 			// cout << "size " << it.size() << endl;
-	        if(!bf.lookup(e)) {
+	        if (!bf.lookup(e)) {
 	        	// cout << "not found" << endl;
-	        	if(l & 1) { // odd # of levels
+	        	if (l & 1) { // odd # of levels
 		        	// cout << "s (unrevoked)" << endl;
 	        		return false;
 	        	}
@@ -120,6 +128,18 @@ class BFCascade {
 	        i++;
 	    }
 		cout << "total cascade size (bytes): " << total_size << "\n";
+	}
+
+	uint8_t num_levels() {
+		return bfc.size();
+	}
+
+	uint64_t num_bytes() {
+		return size_in_bytes;
+	}
+
+	double bits_per_item() {
+		return 8.0 * size_in_bytes / num_items_;
 	}
 };
 
