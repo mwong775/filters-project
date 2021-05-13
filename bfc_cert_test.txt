@@ -1,0 +1,77 @@
+time cost for read: 4.46404
+bloom filter cascade lookup
+level, insert, lookup, # fp's, fp, memory(bytes), bits per item
+1, 262328, 28341276, 144704, 0.00511, 361361, 1.37752
+2, 144704, 262328, 1330, 0.00507, 199336, 1.37754
+3, 1330, 144704, 770, 0.00532, 1840, 1.38346
+4, 770, 1330, 5, 0.00376, 1068, 1.38701
+5, 5, 770, 2, 0.00260, 16, 3.20000
+6, 2, 5, 0, 0.00000, 11, 5.50000
+total cascade size (bytes):563632
+insert done
+time: 8.38233
+valid lookup count: 28341276
+time: 2.67707
+revoked lookup count: 262328
+time: 8.32926
+total mixed lookup count: 28603604
+level, insert, lookup, # fp's, fp, memory(bytes), bits per item
+1, 262328, 28341276, 144704, 0.00511, 361361, 1.37752
+2, 144704, 262328, 1330, 0.00507, 199336, 1.37754
+3, 1330, 144704, 770, 0.00532, 1840, 1.38346
+4, 770, 1330, 5, 0.00376, 1068, 1.38701
+5, 5, 770, 2, 0.00260, 16, 3.20000
+6, 2, 5, 0, 0.00000, 11, 5.50000
+total cascade size (bytes):563632
+insert done
+time: 8.51204
+valid lookup count: 28341276
+time: 2.68042
+revoked lookup count: 262328
+time: 8.32907
+total mixed lookup count: 28603604
+level, insert, lookup, # fp's, fp, memory(bytes), bits per item
+1, 262328, 28341276, 144704, 0.00511, 361361, 1.37752
+2, 144704, 262328, 1330, 0.00507, 199336, 1.37754
+3, 1330, 144704, 770, 0.00532, 1840, 1.38346
+4, 770, 1330, 5, 0.00376, 1068, 1.38701
+5, 5, 770, 2, 0.00260, 16, 3.20000
+6, 2, 5, 0, 0.00000, 11, 5.50000
+total cascade size (bytes):563632
+insert done
+time: 8.45017
+valid lookup count: 28341276
+time: 2.68474
+revoked lookup count: 262328
+time: 8.39971
+total mixed lookup count: 28603604
+level, insert, lookup, # fp's, fp, memory(bytes), bits per item
+1, 262328, 28341276, 144704, 0.00511, 361361, 1.37752
+2, 144704, 262328, 1330, 0.00507, 199336, 1.37754
+3, 1330, 144704, 770, 0.00532, 1840, 1.38346
+4, 770, 1330, 5, 0.00376, 1068, 1.38701
+5, 5, 770, 2, 0.00260, 16, 3.20000
+6, 2, 5, 0, 0.00000, 11, 5.50000
+total cascade size (bytes):563632
+insert done
+time: 8.52569
+valid lookup count: 28341276
+time: 2.65295
+revoked lookup count: 262328
+time: 8.39494
+total mixed lookup count: 28603604
+level, insert, lookup, # fp's, fp, memory(bytes), bits per item
+1, 262328, 28341276, 144704, 0.00511, 361361, 1.37752
+2, 144704, 262328, 1330, 0.00507, 199336, 1.37754
+3, 1330, 144704, 770, 0.00532, 1840, 1.38346
+4, 770, 1330, 5, 0.00376, 1068, 1.38701
+5, 5, 770, 2, 0.00260, 16, 3.20000
+6, 2, 5, 0, 0.00000, 11, 5.50000
+total cascade size (bytes):563632
+insert done
+time: 8.48052
+valid lookup count: 28341276
+time: 2.64725
+revoked lookup count: 262328
+time: 8.32795
+total mixed lookup count: 28603604

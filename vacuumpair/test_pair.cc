@@ -13,7 +13,7 @@ void random_gen(int n, vector<uint64_t> &store, mt19937 &rd)
 }
 
 template <typename KeyType>
-void read_cert(int f, vector<KeyType> &r, vector<KeyType> &s, FILE *file)
+void read_cert(int f, vector<KeyType> &r, vector<KeyType> &s) // , FILE *file
 {
     string line;
     string revoked_filename = "../final_revoked_unique.txt";
@@ -55,16 +55,16 @@ int main(int argc, char **argv)
     vector<KeyType> s;
     uint64_t size = 0;
 
-    FILE *file = fopen("vacuum_pair.csv", "a"); // to print all stats to a file
-    if (file == NULL)
-    {
-        perror("Couldn't open file\n");
-        return {};
-    }
+    // FILE *file = fopen("vacuum_pair.csv", "a"); // to print all stats to a file
+    // if (file == NULL)
+    // {
+    //     perror("Couldn't open file\n");
+    //     return {};
+    // }
 
     if (argc <= 1)
     {
-        read_cert(1, r, s, file);
+        read_cert(1, r, s); // , file
         size = r.size();
     }
     else

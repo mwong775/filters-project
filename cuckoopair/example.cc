@@ -114,7 +114,7 @@ vector<uint8_t> hashtable_ops(const uint64_t &init_size, vector<KeyType> &r, vec
     // table.bucketInfo();
 
     std::map<uint8_t, uint16_t> seed_map;
-    table.seedInfo(seed_map);
+    cout << table.seedInfo(seed_map);
     fprintf(file, "rehashes per bucket, count\n");
     for (auto &k : seed_map)
     {

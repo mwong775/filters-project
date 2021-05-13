@@ -75,8 +75,8 @@ void test_bfc(vector<uint64_t> r, vector<uint64_t> s, vector<uint64_t> fp, FILE 
 
 void read_cert(int f) {
     string line;
-    string revoked_filename = "../final_revoked_unique.txt";
-    string unrevoked_filename = "../final_unrevoked_unique.txt";
+    string revoked_filename = "final_revoked_unique.txt";
+    string unrevoked_filename = "final_unrevoked_unique.txt";
     if(f == 0) {
         revoked_filename = "../revoked_sorted.txt";
         unrevoked_filename = "../unrevoked_sorted.txt";
