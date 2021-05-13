@@ -145,14 +145,12 @@ namespace cuckoofilter
     }
 
     // modified of above function to use for 2 indices and tags
-    inline void GenerateTagHashes(const ItemType &item, size_t *i1, size_t *i2,
-                                  uint32_t *tag1, uint32_t *tag2) const
+    inline void GenerateAltIndexTagHash(const ItemType &item, const size_t i1, size_t *i2,
+                                  uint32_t *tag2) const
     {
-      *i1 = IndexHash(item); // original: hash >> 32
-      *i2 = AltIndex(*i1, item);
-      const uint64_t hash1 = hasher_(item, seeds_.at(*i1));
+      // *i1 = IndexHash(item); // original: hash >> 32
+      *i2 = AltIndex(i1, item);
       const uint64_t hash2 = hasher_(item, seeds_.at(*i2));
-      *tag1 = TagHash(hash1);
       *tag2 = TagHash(hash2);
     }
 
@@ -248,50 +246,30 @@ namespace cuckoofilter
     }
     
     // modified constructor
-    explicit VacuumFilter(const size_t max_num_keys, const std::vector<uint8_t> &seeds = std::vector<uint8_t>(), bool aligned = false, bool _packed = false) : num_items_(0), victim_(), hasher_()
+    explicit VacuumFilter(const size_t max_num_keys, const std::vector<uint8_t> &seeds = std::vector<uint8_t>(), bool aligned = false, bool _packed = false) : num_items_(0), seeds_(seeds), victim_(), hasher_()
     {
 
-      std::cout << "good" << std::endl;
+      // std::cout << "good" << std::endl;
       srand(1);
       size_t assoc = 4;
-      size_t num_buckets;
+      size_t num_buckets = seeds_.size();
+      // size_t num_buckets;
       packed = _packed;
 
-      seeds_ = seeds;
+      big_seg = 0;
+      big_seg = std::max(big_seg, proper_alt_range(max_num_keys / assoc, 0, len));
+      big_seg = std::max(big_seg, 1024);
+      // num_buckets = ROUNDUP(int(max_num_keys / assoc), big_seg);
 
-      if (aligned)
-      {
-        num_buckets = upperpower2(std::max<uint64_t>(1, max_num_keys / assoc));
-        if (num_buckets < 128)
-          num_buckets = 128;
-
-        double frac = (double)max_num_keys / num_buckets / assoc;
-
-        // if (frac > 0.96)
-        // {
-          //num_buckets <<= 1;
-        // }
-        for (int i = 0; i < AR; i++)
-          len[i] = num_buckets - 1;
-      }
-      else
-      { // this is default
-        big_seg = 0;
-        big_seg = std::max(big_seg, proper_alt_range(max_num_keys / assoc, 0, len));
-        big_seg = std::max(big_seg, 1024);
-        num_buckets = ROUNDUP(int(max_num_keys / assoc), big_seg);
-
-        big_seg--;
-        len[0] = big_seg;
-        for (int i = 1; i < AR; i++) // sets all alt ranges
-          len[i] = proper_alt_range(num_buckets, i, len) - 1;
-        len[AR - 1] = (len[AR - 1] + 1) * 2 - 1;
-        if (AR == 1)
-          num_buckets = ROUNDUP(int(max_num_keys / assoc), len[0] + 1);
-      }
+      big_seg--;
+      len[0] = big_seg;
+      for (int i = 1; i < AR; i++) // sets all alt ranges
+        len[i] = proper_alt_range(num_buckets, i, len) - 1;
+      len[AR - 1] = (len[AR - 1] + 1) * 2 - 1;
+      // if (AR == 1)
+      //   num_buckets = ROUNDUP(int(max_num_keys / assoc), len[0] + 1);
 
       // assert(seeds_.size() == num_buckets); // double-check calculations match
-
       victim_.used = false;
 
       std::cout << "num_buckets = " << num_buckets << std::endl;
@@ -347,7 +325,7 @@ namespace cuckoofilter
     // load factor is the fraction of occupancy
     double LoadFactor() const { return 1.0 * Size() / table_->SizeInTags(); }
 
-    double BitsPerItem() const { return 8.0 * table_->SizeInBytes() / Size(); }
+    double BitsPerItem() const { return 8.0 * (table_->SizeInBytes() + SeedTable_Size()) / Size(); }
   };
 
   template <typename ItemType, size_t bits_per_item, typename HashFamily,
@@ -537,49 +515,22 @@ Status VacuumFilter<ItemType, bits_per_item, HashFamily, TableType>::CopyInsert(
   Status VacuumFilter<ItemType, bits_per_item, HashFamily, TableType>::Contain(
       const ItemType &key) const
   {
-    bool found = false;
+    // bool found = false;
     size_t i1, i2;
+    uint32_t tag1, tag2;
 
-   uint32_t tag1, tag2;
+    GenerateIndexTagHash(key, &i1, &tag1);
 
-    GenerateTagHashes(key, &i1, &i2, &tag1, &tag2);
-    // assert(i1 == AltIndex(i2, key));
-
-    // std::cout << "lup " << tag1 << ", " << tag2 << ": " << i1 << ", " << i2
-    //           << "\n";
-
-    // found = victim_.used && (tag1 == victim_.tag || tag2 == victim_.tag) &&
-    //         (i1 == victim_.index || i2 == victim_.index);
-
-    if (table_->FindTagInBuckets(i1, i2, tag1, tag2)) // found ||
+    if (table_->FindTagInBucket(i1, tag1))
       return Ok;
 
-    // uint32_t tag;
-
-    // GenerateIndexTagHash(key, &i1, &tag);
-
-    // if ((victim_.used && i1 == victim_.index && tag == victim_.tag) || table_->FindTagInBucket(i1, tag))
-    //   return Ok;
-
-    // i2 = AltIndex(i1, tag);
-
-    // if ((victim_.used && i2 == victim_.index && tag == victim_.tag) || table_->FindTagInBucket(i2, tag))
-    //   return Ok;
+    // size_t i2;
+    // uint32_t tag2;
+    GenerateAltIndexTagHash(key, i1, &i2, &tag2);
+    if (table_->FindTagInBucket(i2, tag2))
+      return Ok;
 
     return NotFound;
-
-    /* 
-      i2 = AltIndex(i1, tag);
-      found = victim_.used && (tag == victim_.tag) &&
-              (i1 == victim_.index || i2 == victim_.index);
-
-      if (found || table_->FindTagInBuckets(i1, i2, tag)) {
-        return Ok;
-      } else {
-        return NotFound;
-      }
-
-*/
   }
 
   template <typename ItemType, size_t bits_per_item, typename HashFamily,

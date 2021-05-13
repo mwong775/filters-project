@@ -13,11 +13,8 @@
 #include <iterator>
 #include <limits>
 #include <list>
-#include <memory>
-#include <mutex>
 #include <stdexcept>
 #include <string>
-#include <thread>
 #include <type_traits>
 #include <utility>
 #include <vector>
@@ -125,7 +122,7 @@ namespace vacuumhashtable
      * @return number of elements in the table
      */
         size_type size() const
-        { // TODO: fix this
+        {
             return num_items_;
         }
 
@@ -165,24 +162,38 @@ namespace vacuumhashtable
             buckets_.info();
         }
 
+        size_t totalRehash() const {
+            return total_rehashes_;
+        }
+
+        double averageRehash() const {
+            double avg_rehash = 1.0 * total_rehashes_ / bucket_count();
+            return avg_rehash;
+        }
+
         // bucket seeds info
-        void seedInfo() const
+        std::string seedInfo() const
         {
             // can use unordered map to track quantity of each rehash count (e.g. lots of 1's, less 2's, etc.)
-            std::cout << "Bucket Seed Info:\n";
+            std::stringstream ss;
+            ss << "Bucket Seed Info:\n";
             std::map<int, uint16_t> seed_map;
             for (size_t i = 0; i < bucket_count(); i++)
             {
                 // printSeed(i);
                 seed_map[seeds_.at(i)]++;
             }
-            std::cout << "rehashing seed map:\n(key : value) = # rehashes : # buckets\n";
+            ss << "rehashing seed map:\n(key : value) = # rehashes : # buckets\n";
             for (auto &k : seed_map)
             {
-                std::cout << "{" << k.first << ", " << k.second << "}"
+                total_rehashes_ += (k.first * k.second);
+                ss << "{" << k.first << ", " << k.second << "}"
                           << "\n";
             }
-            std::cout << "total buckets: " << bucket_count() << "\nlookup rounds: " << num_lookup_rds_ << "\n";
+
+            ss << "lookup rounds: "
+                      << num_lookup_rds_ << "\ntotal rehashes: " << total_rehashes_ << "\navg rehash per bucket: " << averageRehash() << "\n";
+            return ss.str();
         }
 
         void printSeed(const size_t i) const
@@ -191,15 +202,19 @@ namespace vacuumhashtable
             std::cout << i << ": [ " << seeds_.at(i) << " ]\n";
         }
 
-        void printAllBuckets() {
-            for (size_t i = 0; i < bucket_count(); i++) {
+        void printAllBuckets()
+        {
+            for (size_t i = 0; i < bucket_count(); i++)
+            {
                 if (seeds_.at(i))
                     printBucket(i);
             }
         }
 
-        void printAllSeeds() {
-            for (size_t i = 0; i < bucket_count(); i++) {
+        void printAllSeeds()
+        {
+            for (size_t i = 0; i < bucket_count(); i++)
+            {
                 if (seeds_.at(i))
                     printSeed(i);
             }
@@ -313,8 +328,8 @@ namespace vacuumhashtable
             return num_lookup_rds_ - 1;
         }
 
-        // lookup fingerprint in buckets: false positive = increment seed for following rehash 
-        template <typename K>
+        // lookup fingerprint in buckets: false positive = increment seed for following rehash
+        template <typename K>                            // std::pair<int32_t, int32_t> for i1, i2; -1 if not found at a bucket
         std::pair<int32_t, int32_t> lookup(const K &key) // const
         {
             // find position in table
@@ -333,49 +348,36 @@ namespace vacuumhashtable
             int32_t i1 = -1;
             int32_t i2 = -1;
 
-            // omg this outer conditional is necessary if false pos. happen to occur in BOTH buckets - pos1 cannot return yet to check pos2 also
-            // TODO: modify function to determine if one/both buckets rehashed - perhaps std::pair?? WAIT JK if index is not important, can just return 0 1 or 2 for # buckets HAH
-            if (pos1.status == ok || pos2.status == ok)
+            // NOTE: false pos. can happen to occur in BOTH buckets - pos1 cannot return yet, have to check pos2 also
+            if (pos1.status == ok)
             {
-                if (pos1.status == ok)
+                uint8_t &seed = seeds_.at(pos1.index);
+                if (seed < num_lookup_rds_)
                 {
-                    // assert(pos1.index == b.i1);
-                    // if (pos1.index != b.i1)
-                    //     return -1;
-
-                    uint8_t &seed = seeds_.at(pos1.index);
-                    if (seed < num_lookup_rds_)
-                    {
-                        seed++;
-                        // seeds_.at(pos1.index)++;
-                        // std::cout << "fp on key: " << key << " hv: " << hv1 << " fp: " << fp1 << " at pos " << pos1.index << ", " << pos1.slot << ", seed to " << seed << "\n";
-                    }
-                    // return fp1;
-                    // return pos1.index;
-                    i1 = pos1.index;
+                    seed++;
+                    // seeds_.at(pos1.index)++;
+                    // std::cout << "fp on key: " << key << " hv: " << hv1 << " fp: " << fp1 << " at pos " << pos1.index << ", " << pos1.slot << ", seed to " << seed << "\n";
                 }
-
-                // uint64_t hv2 = hashed_key(key, seeds_.at(b.i2));
-                // partial_t fp2 = partial_key(hv2);
-                // const table_position pos2 = cuckoo_find_fp(fp2, b.i2);
-
-                // if (pos2.index == 1487)
-                //     std::cout << "LOOKUP 1487 pos2 key: " << key << " fp: " << fp2 << " status: " << pos2.status << "\t";
-
-                if (pos2.status == ok)
-                {
-                    assert(pos2.index == b.i2);
-                    uint8_t &seed = seeds_.at(pos2.index);
-                    if (seed < num_lookup_rds_)
-                    {
-                        seed++;
-                        // std::cout << "fp on key: " << key << " hv: " << hv2 << " fp: " << fp2 << " at pos " << pos2.index << ", " << pos2.slot << ", seed to " << seed << "\n";
-                    }
-                    // return fp2;
-                    i2 = pos2.index;
-                }
-                // return pos1.index; // TODO: INACCURATE TRACKING OF REHASH INDEX - not_found gives index 0 if false pos. is in alt. bucket ONLY
+                // return pos1.index;
+                i1 = pos1.index;
             }
+
+            // uint64_t hv2 = hashed_key(key, seeds_.at(b.i2));
+            // partial_t fp2 = partial_key(hv2);
+            // const table_position pos2 = cuckoo_find_fp(fp2, b.i2);
+
+            if (pos2.status == ok)
+            {
+                assert(pos2.index == b.i2);
+                uint8_t &seed = seeds_.at(pos2.index);
+                if (seed < num_lookup_rds_)
+                {
+                    seed++;
+                    // std::cout << "fp on key: " << key << " hv: " << hv2 << " fp: " << fp2 << " at pos " << pos2.index << ", " << pos2.slot << ", seed to " << seed << "\n";
+                }
+                i2 = pos2.index;
+            }
+            // return pos1.index; // TODO: INACCURATE TRACKING OF REHASH INDEX - not_found gives index 0 if false pos. is in alt. bucket ONLY
             return std::make_pair(i1, i2);
         }
 
@@ -397,8 +399,10 @@ namespace vacuumhashtable
                         const size_type key = b.key(j);
                         size_type hv = hashed_key(key, seeds_.at(i));
                         partial_t fp = partial_key(hv);
-                        if (b.occupied(j))
+                        if (b.occupied(j)) {
                             fp_to_bucket(i, j, fp);
+                            total_rehashes_++;
+                        }
                     }
                 }
             }
@@ -437,6 +441,17 @@ namespace vacuumhashtable
                 fp_table.push_back(fp_bucket);
             }
         }
+
+        // template <typename key_type>
+        // std::vector<key_type> export_bucket(const size_t i) const {
+        //     std::vector<key_type> fp_bucket;
+        //         for (int j = 0; j < static_cast<int>(slot_per_bucket()); j++)
+        //         {
+        //             if (buckets_[i].occupied(j))
+        //                 fp_bucket.push_back(buckets_[i].partial(j));
+        //         }
+        //     return fp_bucket;
+        // }
 
     private:
         template <typename K>
@@ -491,7 +506,7 @@ namespace vacuumhashtable
         // second possible bucket, so alt_index(ti, partial, alt_index(ti, partial,
         // index_hash(ti, hv))) == index_hash(ti, hv).
         inline size_type alt_index(const size_type index,
-                                          const size_type key) const
+                                   const size_type key) const
         {
             int t = key * 0x5bd1e995;
             int seg = len[key & (AR - 1)];
@@ -1181,7 +1196,8 @@ namespace vacuumhashtable
         mutable buckets_t buckets_;
 
         std::vector<uint8_t> seeds_;
-        mutable size_t num_lookup_rds_;
+        mutable size_t num_lookup_rds_; // max rehash count = lookup_rds - 1
+        mutable size_t total_rehashes_;
 
         // vacuum
         int len[AR];
