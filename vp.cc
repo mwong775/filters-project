@@ -101,9 +101,6 @@ void test_lf_lookup(int n = 0, int q = 0, int rept = 1)
             vector<uint64_t> lupKey;
             random_gen(lim, insKey, rd);
             random_gen(p, lupKey, rd); // p * neg_frac
-            // for (; i < lim; i++)
-            //     if (vp.Add(insKey[i]) == cuckoofilter::Ok)
-            //         ++ins_cnt;
 
             // insertions take both insert and lookup sets as input
             // to generate more cascade levels upon finding false positive's
@@ -177,7 +174,7 @@ void test_size_lookup(int n = 0, int q = 0, int rept = 1)
     int seed = 1;
 
     mt19937 rd(seed);
-    double mop[6][20], mop1[6][20], bits_per_item[6][20];
+    double mop[6][20], mop1[6][20], bits_per_item[6][20], load_factor[6][20];
     int cnt[6][20], cnt1[6][20], table_bytes[6][20], seed_bytes[6][20];
     memcle(mop);
     memcle(cnt);
@@ -187,7 +184,7 @@ void test_size_lookup(int n = 0, int q = 0, int rept = 1)
     memcle(table_bytes);
     memcle(seed_bytes);
 
-    printf("vp lookup\n");
+    printf("vp size lookup\n");
     for (int t = 0; t < rept; t++)
     {
         int i = 0;
@@ -205,9 +202,6 @@ void test_size_lookup(int n = 0, int q = 0, int rept = 1)
             vector<uint64_t> lupKey;
             random_gen(lim, insKey, rd);
             random_gen(p, lupKey, rd);
-            // for (; i < lim; i++)
-            //     if (vp.Add(insKey[i]) == cuckoofilter::Ok)
-            //         ++ins_cnt;
 
             // insertions take both insert and lookup sets as input
             // to generate more cascade levels upon finding false positive's
@@ -215,9 +209,10 @@ void test_size_lookup(int n = 0, int q = 0, int rept = 1)
 
             vp.init(insKey, lupKey);
 
-            bits_per_item[0][j] += vp.bits_per_item();
-            table_bytes[0][j] += vp.table_size();
-            seed_bytes[0][j] += vp.seedtable_size();
+            bits_per_item[0][j] = vp.bits_per_item();
+            load_factor[0][j] = vp.load_factor();
+            table_bytes[0][j] = vp.table_size();
+            seed_bytes[0][j] = vp.seedtable_size();
 
             auto start = chrono::steady_clock::now();
 
@@ -252,13 +247,13 @@ void test_size_lookup(int n = 0, int q = 0, int rept = 1)
         }
     }
 
-    fprintf(out, "occupancy, vp neg, vp pos, table size, seed size, total size, item numbers = %d, query number = %d\n", n, q);
+    fprintf(out, "num items, vp neg, vp pos, table size, seed size, total size, bits per item, load factor, item numbers = %d, query number = %d\n", n, q);
 
     for (int j = 0; j < 19; j++)
     {
-        fprintf(out, "%.2f, ", (j + 1) * 0.05);
+        fprintf(out, "%d, ", int((j + 1) * 0.05 * n));
         for (int k = 0; k < 1; k++)
-            fprintf(out, "%.5f, %.5f, %d, %d, %d, ", mop[k][j] / cnt[k][j], mop1[k][j] / cnt1[k][j], table_bytes[k][j], seed_bytes[k][j], table_bytes[k][j] + seed_bytes[k][j]);
+            fprintf(out, "%.5f, %.5f, %d, %d, %d, %.5f, %.5f, ", mop[k][j] / cnt[k][j], mop1[k][j] / cnt1[k][j], table_bytes[k][j], seed_bytes[k][j], table_bytes[k][j] + seed_bytes[k][j], bits_per_item[k][j], load_factor[k][j]);
         fprintf(out, "\n");
     }
 
@@ -282,7 +277,6 @@ void test_cert_lookup(int n = 0, int q = 0, int rept = 1)
     if (q == 0)
         q = lupKey.size();
     // q = 10000000;
-    // double neg_frac = 0.5; // what is this
 
     double mop[6], mop1[6], mop2[6];
     int cnt[6], cnt1[6], cnt2[6];
@@ -379,8 +373,8 @@ void test_cert_lookup(int n = 0, int q = 0, int rept = 1)
 int main(int argc, char **argv)
 {
     int rept = 1;
-    test_lf_lookup(0, 0, rept);
-    // test_lookup(0, 0, rept);
+    test_lf_lookup(1000000, 100000000, rept);
+    // test_size_lookup(1000000, 100000000, rept);
     // test_cert_lookup(0, 0, rept);
 
     return 0;

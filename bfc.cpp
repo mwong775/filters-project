@@ -291,8 +291,8 @@ void test_cert_lookup(int n = 0, int q = 0, int rept = 1)
 
 int main(int argc, char *argv[])
 {
-    int rept = 5;
-    test_size_lookup(0, 0, rept);
+    int rept = 1;
+    test_size_lookup(1000000, 100000000, rept);
     // test_cert_lookup(0, 0, rept);
 
     return 0;

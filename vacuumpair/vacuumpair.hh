@@ -56,7 +56,7 @@ public:
 
         check_lookup_filter(r, s);
 
-        cout << "complete!\n";
+        cout << filter_->Info() << "\ncomplete!\n";
     }
 
     size_t num_rehashes() const {
@@ -76,10 +76,13 @@ public:
         return filter_->SeedTable_Size();
     }
 
-    size_t bits_per_item() const {
+    double bits_per_item() const {
         return filter_->BitsPerItem();
     }
 
+    double load_factor() const {
+        return filter_->LoadFactor();
+    }
 
 
 private:
@@ -167,7 +170,6 @@ private:
     template <typename K>
     void check_lookup_filter(vector<K> &r, vector<K> &s)
     {
-        // check no false negatives - failing here with sizes above 10k :(
         cout << "\nChecking VF false negatives...\n";
         for (auto c : r)
             assert(filter_->Contain(c) == cuckoofilter::Ok);
