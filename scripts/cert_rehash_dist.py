@@ -38,14 +38,13 @@ print(percent_cumu)
 
 # fig = plt.figure()
 fig, ax = plt.subplots()
+ax.locator_params(integer=True)
+plt.xticks(np.arange(min(rehash), max(rehash)+1, 1.0))
 # rehash.pop(0)
 rehash = [int(i) for i in rehash]
-cutoff = 13
-plt.bar(rehash[:cutoff], percent_cumu[:cutoff], color='y', label='cumulative')
-plt.bar(rehash[:cutoff], percent_count[:cutoff], label='specific count')
+plt.bar(rehash, percent_cumu, color='y', label='cumulative')
+plt.bar(rehash, percent_count, label='specific count')
 plt.plot(loc = "upper right")
-xticklabels = ['{}'.format(int(x)) for x in ax.get_xticks()]
-ax.set_xticklabels(xticklabels)
 plt.xlabel("Rehash Count")
 plt.ylabel("Frequency out of Total Buckets")
 plt.title("Bucket Rehashing Frequency Distribution")

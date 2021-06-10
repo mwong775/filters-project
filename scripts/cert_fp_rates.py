@@ -32,6 +32,8 @@ print(fp_decr)
 # lup_round.pop(0)
 
 fig, fp1 = plt.subplots()
+fp1.locator_params(integer=True)
+plt.xticks(np.arange(min(lup_round), max(lup_round)+1, 1.0))
 fp1.plot(lup_round, percent_fp, marker = 'o', label="false positives")
 fp1.legend(loc = "upper right")
 fp1.set_xlabel("Lookups")
@@ -41,6 +43,8 @@ plt.title("False Positive Rates Per Lookup")
 
 fp2 = fp1.twinx()
 fp2.plot(lup_round, fp)
+yticklabels = ['{:,}'.format(int(y)) + 'K' for y in fp2.get_yticks()/1000]
+fp2.set_yticklabels(yticklabels)
 fp2.set_ylabel("False Positives")
 
 fig.tight_layout()
@@ -48,7 +52,7 @@ fig.tight_layout()
 """
 cell_text = [lup_round, fp, np.array(['%1.5f' % x for x in percent_fp])]
 
-# Add a table at the bottom of the axes
+# Add a table at the bottom of the fp1es
 table = plt.table(cellText=cell_text,
                         rowLabels=rows,
                         cellLoc='center',
