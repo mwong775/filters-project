@@ -36,6 +36,11 @@ print(cumulative)
 percent_cumu.insert(0, 0)
 print(percent_cumu)
 
+size = 16
+plt.rc('axes', titlesize=size)
+plt.rc('axes', labelsize=size)
+plt.rcParams.update({'font.size': 12})
+
 # fig = plt.figure()
 fig, ax = plt.subplots()
 ax.locator_params(integer=True)
@@ -50,7 +55,6 @@ plt.ylabel("Frequency out of Total Buckets")
 plt.title("Bucket Rehashing Frequency Distribution")
 ax.yaxis.set_major_formatter(mtick.PercentFormatter())
 ax.legend()
-
 
 """
 ax2 = ax.twinx()

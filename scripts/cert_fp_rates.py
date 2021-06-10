@@ -31,6 +31,11 @@ fp_decr  = np.array([x * -1 for x in fp_decr])
 print(fp_decr)
 # lup_round.pop(0)
 
+size = 16
+plt.rc('axes', titlesize=size)
+plt.rc('axes', labelsize=size)
+plt.rcParams.update({'font.size': 12})
+
 fig, fp1 = plt.subplots()
 fp1.locator_params(integer=True)
 plt.xticks(np.arange(min(lup_round), max(lup_round)+1, 1.0))

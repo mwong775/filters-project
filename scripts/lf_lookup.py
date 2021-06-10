@@ -18,10 +18,11 @@ with open('../vp_lf_lookup.csv') as file:
         neg_tput.append(float(row[' vp neg']))
         pos_tput.append(float(row[' vp pos']))
 
+plt.rcParams.update({'font.size': 18})
 # max rehash
 fig, fp1 = plt.subplots()
 fp1.plot(occ, max_rh, marker = 'o', label="max # rehash")
-fp1.legend(loc = "upper right")
+fp1.legend(loc = "upper left")
 
 fp1.set_xlabel("Table occupancy")
 fp1.set_ylabel("Maximum # of rehashes")
@@ -33,10 +34,10 @@ fig.savefig("../figures/lf_max_rh_lookup.png")
 # average rehash
 fig, fp1 = plt.subplots()
 fp1.plot(occ, avg_rh, marker = 'o', label="avg. # rehash")
-fp1.legend(loc = "upper right")
+fp1.legend(loc = "upper left")
 
 fp1.set_xlabel("Table occupancy")
-fp1.set_ylabel("Average # of rehashes per bucket")
+fp1.set_ylabel("Avg # of rehashes / bucket")
 
 # plt.grid(True)
 plt.show()
@@ -47,7 +48,7 @@ fig, fp1 = plt.subplots()
 fp1.plot(occ, pos_tput, marker = 'o', label="pos tput")
 fp1.plot(occ, neg_tput, marker = 'o', label="neg tput")
 
-fp1.legend(loc = "upper right")
+fp1.legend(loc = "center left")
 
 fp1.set_xlabel("Table occupancy")
 fp1.set_ylabel("Lookup throughput (MOPS)")

@@ -41,6 +41,7 @@ with open('../vp_size_lookup.csv') as file:
 bfc_size = [s / 10**6 for s in bfc_size]
 vp_size = [s / 10**6 for s in vp_size]
 
+plt.rcParams.update({'font.size': 14})
 
 # Positive + Negative lookup throughput
 fig, fp1 = plt.subplots()
@@ -58,11 +59,13 @@ fp1.set_ylabel("Lookup throughput (MOPS)")
 plt.show()
 fig.savefig("../figures/size_lookup.png")
 
+plt.rcParams.update({'font.size': 18})
+
 # total memory/size
 fig, fp1 = plt.subplots()
 fp1.plot(num_items, bfc_size, marker = 'o', label="BFC")
 fp1.plot(num_items, vp_size, marker = 'o', label="VP")
-fp1.legend(loc = "upper right")
+fp1.legend(loc = "upper left")
 xticklabels = ['{:,}'.format(int(x)) + 'K' for x in fp1.get_xticks()/1000]
 fp1.set_xticklabels(xticklabels)
 fp1.set_xlabel("Number of items") #  $\mathregular{10^8}$
