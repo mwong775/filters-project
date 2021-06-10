@@ -45,10 +45,10 @@ plt.rcParams.update({'font.size': 14})
 
 # Positive + Negative lookup throughput
 fig, fp1 = plt.subplots()
-fp1.plot(num_items, bfc_pos_tput, marker = 'o', label="BFC pos")
-fp1.plot(num_items, bfc_neg_tput, marker = 'o', label="BFC neg")
 fp1.plot(num_items, vp_pos_tput, marker = 'o', label="VP pos")
 fp1.plot(num_items, vp_neg_tput, marker = 'o', label="VP neg")
+fp1.plot(num_items, bfc_pos_tput, marker = 'o', label="BFC pos")
+fp1.plot(num_items, bfc_neg_tput, marker = 'o', label="BFC neg")
 fp1.legend(loc = "upper right")
 xticklabels = ['{:,}'.format(int(x)) + 'K' for x in fp1.get_xticks()/1000]
 fp1.set_xticklabels(xticklabels)
@@ -63,8 +63,8 @@ plt.rcParams.update({'font.size': 18})
 
 # total memory/size
 fig, fp1 = plt.subplots()
-fp1.plot(num_items, bfc_size, marker = 'o', label="BFC")
 fp1.plot(num_items, vp_size, marker = 'o', label="VP")
+fp1.plot(num_items, bfc_size, marker = 'o', label="BFC")
 fp1.legend(loc = "upper left")
 xticklabels = ['{:,}'.format(int(x)) + 'K' for x in fp1.get_xticks()/1000]
 fp1.set_xticklabels(xticklabels)
@@ -77,8 +77,8 @@ fig.savefig("../figures/size_totalmem_lookup.png", bbox_inches='tight')
 
 # bits per item
 fig, fp1 = plt.subplots()
-fp1.plot(num_items, bfc_bits_per_item, marker = 'o', label="BFC")
 fp1.plot(num_items, vp_bits_per_item, marker = 'o', label="VP")
+fp1.plot(num_items, bfc_bits_per_item, marker = 'o', label="BFC")
 fp1.legend(loc = "upper right")
 xticklabels = ['{:,}'.format(int(x)) + 'K' for x in fp1.get_xticks()/1000]
 fp1.set_xticklabels(xticklabels)
