@@ -57,7 +57,7 @@ fp1.set_ylabel("Lookup throughput (MOPS)")
 
 # plt.grid(True)
 plt.show()
-fig.savefig("../figures/size_lookup.png")
+fig.savefig("../figures/size_lookup.png", bbox_inches='tight')
 
 plt.rcParams.update({'font.size': 18})
 
@@ -73,7 +73,7 @@ fp1.set_ylabel("Memory cost (MB)")
 
 # plt.grid(True)
 plt.show()
-fig.savefig("../figures/size_totalmem_lookup.png")
+fig.savefig("../figures/size_totalmem_lookup.png", bbox_inches='tight')
 
 # bits per item
 fig, fp1 = plt.subplots()
@@ -87,6 +87,6 @@ fp1.set_ylabel("Bits per item")
 
 # plt.grid(True)
 plt.show()
-fig.savefig("../figures/size_bits_lookup.png")
+fig.savefig("../figures/size_bits_lookup.png", bbox_inches='tight')
 
 # exit()

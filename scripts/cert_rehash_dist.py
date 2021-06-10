@@ -36,7 +36,7 @@ print(cumulative)
 percent_cumu.insert(0, 0)
 print(percent_cumu)
 
-size = 16
+size = 20
 plt.rc('axes', titlesize=size)
 plt.rc('axes', labelsize=size)
 plt.rcParams.update({'font.size': 12})
@@ -52,7 +52,7 @@ plt.bar(rehash, percent_count, label='specific count')
 plt.plot(loc = "upper right")
 plt.xlabel("Rehash Count")
 plt.ylabel("Frequency out of Total Buckets")
-plt.title("Bucket Rehashing Frequency Distribution")
+# plt.title("Bucket Rehashing Frequency Distribution")
 ax.yaxis.set_major_formatter(mtick.PercentFormatter())
 ax.legend()
 

@@ -31,7 +31,7 @@ fp_decr  = np.array([x * -1 for x in fp_decr])
 print(fp_decr)
 # lup_round.pop(0)
 
-size = 16
+size = 20
 plt.rc('axes', titlesize=size)
 plt.rc('axes', labelsize=size)
 plt.rcParams.update({'font.size': 12})
@@ -44,7 +44,7 @@ fp1.legend(loc = "upper right")
 fp1.set_xlabel("Lookups")
 fp1.set_ylabel("False Positive Rates")
 fp1.yaxis.set_major_formatter(mtick.PercentFormatter())
-plt.title("False Positive Rates Per Lookup")
+# plt.title("False Positive Rates Per Lookup")
 
 fp2 = fp1.twinx()
 fp2.plot(lup_round, fp)

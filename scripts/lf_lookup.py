@@ -29,7 +29,7 @@ fp1.set_ylabel("Maximum # of rehashes")
 
 # plt.grid(True)
 plt.show()
-fig.savefig("../figures/lf_max_rh_lookup.png")
+fig.savefig("../figures/lf_max_rh_lookup.png", bbox_inches='tight')
 
 # average rehash
 fig, fp1 = plt.subplots()
@@ -41,7 +41,7 @@ fp1.set_ylabel("Avg # of rehashes / bucket")
 
 # plt.grid(True)
 plt.show()
-fig.savefig("../figures/lf_avg_rh_lookup.png")
+fig.savefig("../figures/lf_avg_rh_lookup.png", bbox_inches='tight')
 
 # positive + negative lookup throughput
 fig, fp1 = plt.subplots()
@@ -55,4 +55,4 @@ fp1.set_ylabel("Lookup throughput (MOPS)")
 
 # plt.grid(True)
 plt.show()
-fig.savefig("../figures/lf_lookup.png")
+fig.savefig("../figures/lf_lookup.png", bbox_inches='tight')
