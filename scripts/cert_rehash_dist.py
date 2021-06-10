@@ -12,8 +12,8 @@ percent_cumu = [] # % of buckets rehashed at round
 with open('../csv/cert_rehash_dist.csv') as file:
     reader = csv.DictReader(file, delimiter=',')
     for row in reader:
-        rehash.append(int(row['rehashes per bucket']))
-        count.append(int(row[' count']))
+        rehash.append(int(row['rehashes']))
+        count.append(int(row['buckets']))
 
 print(rehash)
 # rehash.pop(0)
@@ -40,9 +40,12 @@ print(percent_cumu)
 fig, ax = plt.subplots()
 # rehash.pop(0)
 rehash = [int(i) for i in rehash]
-plt.bar(rehash, percent_cumu, color='y', label='cumulative')
-plt.bar(rehash, percent_count, label='specific count')
+cutoff = 13
+plt.bar(rehash[:cutoff], percent_cumu[:cutoff], color='y', label='cumulative')
+plt.bar(rehash[:cutoff], percent_count[:cutoff], label='specific count')
 plt.plot(loc = "upper right")
+xticklabels = ['{}'.format(int(x)) for x in ax.get_xticks()]
+ax.set_xticklabels(xticklabels)
 plt.xlabel("Rehash Count")
 plt.ylabel("Frequency out of Total Buckets")
 plt.title("Bucket Rehashing Frequency Distribution")

@@ -49,7 +49,8 @@ fp1.plot(num_items, bfc_neg_tput, marker = 'o', label="BFC neg")
 fp1.plot(num_items, vp_pos_tput, marker = 'o', label="VP pos")
 fp1.plot(num_items, vp_neg_tput, marker = 'o', label="VP neg")
 fp1.legend(loc = "upper right")
-
+xticklabels = ['{:,}'.format(int(x)) + 'K' for x in fp1.get_xticks()/1000]
+fp1.set_xticklabels(xticklabels)
 fp1.set_xlabel("Number of items") #  $\mathregular{10^8}$
 fp1.set_ylabel("Lookup throughput (MOPS)")
 
@@ -62,7 +63,8 @@ fig, fp1 = plt.subplots()
 fp1.plot(num_items, bfc_size, marker = 'o', label="BFC")
 fp1.plot(num_items, vp_size, marker = 'o', label="VP")
 fp1.legend(loc = "upper right")
-
+xticklabels = ['{:,}'.format(int(x)) + 'K' for x in fp1.get_xticks()/1000]
+fp1.set_xticklabels(xticklabels)
 fp1.set_xlabel("Number of items") #  $\mathregular{10^8}$
 fp1.set_ylabel("Memory cost (MB)")
 
@@ -75,9 +77,10 @@ fig, fp1 = plt.subplots()
 fp1.plot(num_items, bfc_bits_per_item, marker = 'o', label="BFC")
 fp1.plot(num_items, vp_bits_per_item, marker = 'o', label="VP")
 fp1.legend(loc = "upper right")
-
-fp1.set_xlabel("Number of items $\mathregular{10^8}$")
-fp1.set_ylabel("bits per item")
+xticklabels = ['{:,}'.format(int(x)) + 'K' for x in fp1.get_xticks()/1000]
+fp1.set_xticklabels(xticklabels)
+fp1.set_xlabel("Number of items")
+fp1.set_ylabel("Bits per item")
 
 # plt.grid(True)
 plt.show()

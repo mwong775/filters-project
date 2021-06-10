@@ -191,7 +191,7 @@ void test_size_lookup(int n = 0, int q = 0, int rept = 1)
         int ins_cnt = 0;
         int j = 0;
 
-        for (double r = 0.05; r <= 0.96; r += 0.05, j++)
+        for (double r = 0.05; r <= 0.48; r += 0.05, j++) // 0.96
         {
             printf("r = %.2f\n", r);
             int lim = int(n * r);
@@ -278,8 +278,8 @@ void test_cert_lookup(int n = 0, int q = 0, int rept = 1)
         q = lupKey.size();
     // q = 10000000;
 
-    double mop[6], mop1[6], mop2[6];
-    int cnt[6], cnt1[6], cnt2[6];
+    double mop[10], mop1[10], mop2[10];
+    int cnt[10], cnt1[10], cnt2[10];
 
     memcle(mop);
     memcle(cnt);
@@ -346,7 +346,7 @@ void test_cert_lookup(int n = 0, int q = 0, int rept = 1)
         start = chrono::steady_clock::now();
         lookup_number = 0;
         // set S
-        for (int k = 0; k < q; k++) // neg_frac = 0.5
+        for (int k = 0; k < n; k++) // neg_frac = 0.5
             if (vp.lookup(lupKey[k]) == false)
                 lookup_number++;
         // set R
@@ -357,9 +357,9 @@ void test_cert_lookup(int n = 0, int q = 0, int rept = 1)
         end = chrono::steady_clock::now();
         cost = time_cost(start, end);
 
-        mop2[t] += double(n + q) / 1000000.0 / cost;
+        mop2[t] += double(2 * n) / 1000000.0 / cost; // n + q
         cnt2[t] += 1;
-        printf("time: %.5f\n", double(n + q) / 1000000.0 / cost);
+        printf("time: %.5f\n", double(2 * n) / 1000000.0 / cost); // n + q
         printf("total mixed lookup count: %d\n", lookup_number);
     }
     fprintf(out, "valid throughput, revoked throughput, mixed throughput, item numbers = %d, query number = %d\n", n, q);
@@ -373,8 +373,8 @@ void test_cert_lookup(int n = 0, int q = 0, int rept = 1)
 int main(int argc, char **argv)
 {
     int rept = 1;
-    test_lf_lookup(1000000, 100000000, rept);
-    // test_size_lookup(1000000, 100000000, rept);
+    // test_lf_lookup(1000000, 100000000, rept);
+    test_size_lookup(10000000, 1000000000, rept);
     // test_cert_lookup(0, 0, rept);
 
     return 0;
